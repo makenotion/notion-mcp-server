@@ -167,4 +167,8 @@ export class MCPProxy {
     // The SDK will handle stdio communication
     await this.server.connect(transport)
   }
+
+  getServer() {
+    return this.server
+  }
 }
