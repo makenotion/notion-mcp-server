@@ -41,10 +41,14 @@ Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.jso
   "mcpServers": {
     "notionApi": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "notion-mcp-server-notion-mcp-server"],
-      "env": {
-        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
-      }
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "OPENAPI_MCP_HEADERS={\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\"}",
+        "notion-mcp-server-notion-mcp-server"
+      ]
     }
   }
 }
