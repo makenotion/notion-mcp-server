@@ -1,33 +1,33 @@
-# ベースイメージとしてNode.jsの最新LTSバージョンを使用
+# Use Node.js LTS as the base image
 FROM node:20-slim AS builder
 
-# 作業ディレクトリを設定
+# Set working directory
 WORKDIR /app
 
-# package.jsonとpackage-lock.jsonをコピー
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# 依存関係をインストール
+# Install dependencies
 RUN npm install
 
-# ソースコードをコピー
+# Copy source code
 COPY . .
 
-# ビルド
+# Build the package
 RUN npm run build
 
-# パッケージをグローバルにインストール
+# Install package globally
 RUN npm link
 
-# 実行用の最小イメージ
+# Minimal image for runtime
 FROM node:20-slim
 
-# ビルドしたパッケージをコピー
+# Copy built package from builder stage
 COPY --from=builder /usr/local/lib/node_modules/@notionhq/notion-mcp-server /usr/local/lib/node_modules/@notionhq/notion-mcp-server
 COPY --from=builder /usr/local/bin/notion-mcp-server /usr/local/bin/notion-mcp-server
 
-# 環境変数のデフォルト値を設定
+# Set default environment variables
 ENV OPENAPI_MCP_HEADERS="{}"
 
-# エントリーポイントを設定
+# Set entrypoint
 ENTRYPOINT ["notion-mcp-server"] 
