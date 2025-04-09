@@ -8,6 +8,8 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 
 ### Installation
 
+#### Using npm
+
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
 
 ```javascript
@@ -16,6 +18,30 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
     "notionApi": {
       "command": "npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
+      }
+    }
+  }
+}
+```
+
+#### Using Docker
+
+You can also run the MCP server using Docker. First, build the Docker image:
+
+```bash
+docker-compose build
+```
+
+Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
+
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "notion-mcp-server-notion-mcp-server"],
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
       }
