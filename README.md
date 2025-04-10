@@ -10,8 +10,14 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 
 #### 1. Setting up Integration in Notion:
 Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a new **internal** integration or select an existing one.
-<img width="918" alt="tutorial" src="tutorial0.png" />
 
+![Creating a Notion Integration token](docs/images/integrations-creation.png)
+
+While we limit the scope of Notion API's exposed (for example, you will not be able to delete databases via MCP), there is a non-zero risk to workspace data by exposing it to LLMs. Security-conscious users may want to further configure the Integration's _Capabilities_. 
+
+For example, you can create a read-only integration token by giving only "Read content" access from the "Configuration" tab:
+
+![Notion Integration Token Capabilities showing Read content checked](docs/images/integrations-capabilities.png)
 
 #### 2. Adding MCP config to your client:
 
@@ -33,14 +39,14 @@ Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile
 
 Don't forget to replace `ntn_****` with your integration secret. Find it from your integration configuration tab:
 
-<img width="918" alt="retrieve-token" src="https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a" />
+![Copying your Integration token from the Configuration tab in the developer portal](https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a)
 
 #### 3. Connecting content to integration:
 Ensure relevant pages and databases are connected to your integration.
 
 To do this, you'll need to visit that page, and click on the 3 dots, and select "Connect to integration". 
-<img width="918" alt="tutorial" src="tutorial.png" />
 
+[Adding Integration Token to Notion Connections](docs/images/connections.png)
 
 ### Examples
 
