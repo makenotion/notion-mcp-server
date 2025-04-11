@@ -4,12 +4,24 @@
 
 This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro). 
 
-![mcp-demo](https://github.com/user-attachments/assets/1f82cd82-87e4-4d7c-8b72-486ef1f18663)
+![mcp-demo](https://github.com/user-attachments/assets/e3ff90a7-7801-48a9-b807-f7dd47f0d3d6)
 
 ### Installation
 
-#### Using npm
+#### 1. Setting up Integration in Notion:
+Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a new **internal** integration or select an existing one.
 
+![Creating a Notion Integration token](docs/images/integrations-creation.png)
+
+While we limit the scope of Notion API's exposed (for example, you will not be able to delete databases via MCP), there is a non-zero risk to workspace data by exposing it to LLMs. Security-conscious users may want to further configure the Integration's _Capabilities_. 
+
+For example, you can create a read-only integration token by giving only "Read content" access from the "Configuration" tab:
+
+![Notion Integration Token Capabilities showing Read content checked](docs/images/integrations-capabilities.png)
+
+#### 2. Adding MCP config to your client:
+
+##### Using npm:
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
 
 ```javascript
@@ -26,8 +38,7 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
 }
 ```
 
-#### Using Docker
-
+##### Using Docker:
 You can also run the MCP server using Docker. First, build the Docker image:
 
 ```bash
@@ -55,9 +66,15 @@ Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.jso
 ```
 
 Don't forget to replace `ntn_****` with your integration secret. Find it from your integration configuration tab:
-<img width="918" alt="retrieve-token" src="https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a" />
 
+![Copying your Integration token from the Configuration tab in the developer portal](https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a)
+
+#### 3. Connecting content to integration:
 Ensure relevant pages and databases are connected to your integration.
+
+To do this, you'll need to visit that page, and click on the 3 dots, and select "Connect to integration". 
+
+![Adding Integration Token to Notion Connections](docs/images/connections.png)
 
 ### Examples
 

@@ -20,17 +20,7 @@
         "scheme": "basic"
       }
     },
-    "parameters": {
-      "notionVersion": {
-        "name": "Notion-Version",
-        "in": "header",
-        "required": true,
-        "schema": {
-          "enum": ["2022-06-28"]
-        },
-        "description": "The [API version](https://developers.notion.com/reference/versioning) to use for this request. The latest version is `2022-06-28`."
-      }
-    },
+    "parameters": {},
     "schemas": {}
   },
   "security": [
@@ -258,9 +248,552 @@
                 "type": "object",
                 "properties": {
                   "filter": {
-                    "type": "string",
+                    "type": "object",
                     "description": "When supplied, limits which pages are returned based on the [filter conditions](ref:post-database-query-filter).",
-                    "format": "json"
+                    "or": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "property": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "rich_text": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "url": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "email": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "phone_number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "number"
+                                },
+                                "does_not_equal": {
+                                  "type": "number"
+                                },
+                                "contains": {
+                                  "type": "number"
+                                },
+                                "does_not_contain": {
+                                  "type": "number"
+                                },
+                                "starts_with": {
+                                  "type": "number"
+                                },
+                                "ends_with": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "checkbox": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "boolean"
+                                },
+                                "does_not_equal": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "select": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "multi_select": {
+                              "type": "object",
+                              "properties": {
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "status": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "date": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "created_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "last_edited_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "maxItems": 100
+                    },
+                    "and": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "property": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "rich_text": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "url": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "email": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "phone_number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "number"
+                                },
+                                "does_not_equal": {
+                                  "type": "number"
+                                },
+                                "contains": {
+                                  "type": "number"
+                                },
+                                "does_not_contain": {
+                                  "type": "number"
+                                },
+                                "starts_with": {
+                                  "type": "number"
+                                },
+                                "ends_with": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "checkbox": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "boolean"
+                                },
+                                "does_not_equal": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "select": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "multi_select": {
+                              "type": "object",
+                              "properties": {
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "status": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "date": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "created_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "last_edited_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "maxItems": 100
+                    }
                   },
                   "sorts": {
                     "type": "array",
@@ -286,6 +819,12 @@
                     "type": "integer",
                     "description": "The number of items from the full list desired in the response. Maximum: 100",
                     "default": 100
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "in_trash": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -562,15 +1101,6 @@
               "type": "string"
             },
             "required": true
-          },
-          {
-            "name": "Notion-Version",
-            "in": "header",
-            "description": "The [API version](/reference/versioning) to use for this request. The latest version is `<<latestNotionVersion>>`.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -580,24 +1110,89 @@
                 "type": "object",
                 "properties": {
                   "properties": {
-                    "type": "string",
                     "description": "The property values to update for the page. The keys are the names or IDs of the property and the values are property values. If a page property ID is not included, then it is not changed.",
-                    "format": "json"
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "object",
+                              "properties": {
+                                "content": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                "link": {
+                                  "type": ["object", "null"],
+                                  "properties": {
+                                    "url": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["url"]
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": ["content"]
+                            },
+                            "type": {
+                              "enum": ["text"]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": ["text"]
+                        },
+                        "maxItems": 100
+                      },
+                      "type": {
+                        "enum": ["title"]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": ["title"]
                   },
                   "in_trash": {
                     "type": "boolean",
                     "description": "Set to true to delete a block. Set to false to restore a block.",
                     "default": false
                   },
+                  "archived": {
+                    "type": "boolean"
+                  },
                   "icon": {
-                    "type": "string",
                     "description": "A page icon for the page. Supported types are [external file object](https://developers.notion.com/reference/file-object) or [emoji object](https://developers.notion.com/reference/emoji-object).",
-                    "format": "json"
+                    "type": "object",
+                    "properties": {
+                      "emoji": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": ["emoji"]
                   },
                   "cover": {
-                    "type": "string",
+                    "type": "object",
                     "description": "A cover image for the page. Only [external file objects](https://developers.notion.com/reference/file-object) are supported.",
-                    "format": "json"
+                    "properties": {
+                      "external": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": ["url"]
+                      },
+                      "type": {
+                        "enum": ["external"]
+                      }
+                    },
+                    "required": ["external"],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -814,15 +1409,6 @@
               "type": "string"
             },
             "required": true
-          },
-          {
-            "name": "Notion-Version",
-            "in": "header",
-            "description": "The [API version](/reference/versioning) to use for this request. The latest version is `<<latestNotionVersion>>`.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -832,19 +1418,85 @@
                 "type": "object",
                 "properties": {
                   "title": {
+                    "description": "An array of [rich text objects](https://developers.notion.com/reference/rich-text) that represents the title of the database that is displayed in the Notion UI. If omitted, then the database title remains unchanged.",
                     "type": "array",
-                    "description": "An array of [rich text objects](https://developers.notion.com/reference/rich-text) that represents the title of the database that is displayed in the Notion UI. If omitted, then the database title remains unchanged."
+                    "items": {
+                      "type": "object",
+                      "required": ["text"],
+                      "properties": {
+                        "text": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "link": {
+                              "type": ["object", "null"],
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["url"]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": ["content"]
+                        },
+                        "type": {
+                          "enum": ["text"]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
                   },
                   "description": {
                     "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["text"],
+                      "properties": {
+                        "text": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "link": {
+                              "type": ["object", "null"],
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["url"]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": ["content"]
+                        },
+                        "type": {
+                          "enum": ["text"]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100,
                     "description": "An array of [rich text objects](https://developers.notion.com/reference/rich-text) that represents the description of the database that is displayed in the Notion UI. If omitted, then the database description remains unchanged."
                   },
                   "properties": {
-                    "type": "string",
-                    "description": "The properties of a database to be changed in the request, in the form of a JSON object. If updating an existing property, then the keys are the names or IDs of the properties as they appear in Notion, and the values are [property schema objects](ref:property-schema-object). If adding a new property, then the key is the name of the new database property and the value is a [property schema object](ref:property-schema-object).",
-                    "format": "json"
+                    "type": "object",
+                    "description": "Property schema of database. The keys are the names of properties as they appear in Notion and the values are [property schema objects](https://developers.notion.com/reference/property-schema-object).",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
                   }
-                }
+                },
+                "additionalProperties": false
               }
             }
           }
