@@ -12,6 +12,9 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a new **internal** integration or select an existing one.
 <img width="918" alt="tutorial" src="tutorial0.png" />
 
+Note: AI agent may mistakenly mutate or delete your content. Consider adjusting the integration capabilities to the right level of comfort for your use case.
+<img width="910" alt="capabilities" src="https://github.com/user-attachments/assets/406c36d8-5c38-4be9-a617-7e21df8114ef" />
+
 
 #### 2. Adding MCP config to your client:
 
