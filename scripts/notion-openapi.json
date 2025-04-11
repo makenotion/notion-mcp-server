@@ -248,9 +248,552 @@
                 "type": "object",
                 "properties": {
                   "filter": {
-                    "type": "string",
+                    "type": "object",
                     "description": "When supplied, limits which pages are returned based on the [filter conditions](ref:post-database-query-filter).",
-                    "format": "json"
+                    "or": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "property": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "rich_text": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "url": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "email": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "phone_number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "number"
+                                },
+                                "does_not_equal": {
+                                  "type": "number"
+                                },
+                                "contains": {
+                                  "type": "number"
+                                },
+                                "does_not_contain": {
+                                  "type": "number"
+                                },
+                                "starts_with": {
+                                  "type": "number"
+                                },
+                                "ends_with": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "checkbox": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "boolean"
+                                },
+                                "does_not_equal": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "select": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "multi_select": {
+                              "type": "object",
+                              "properties": {
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "status": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "date": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "created_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "last_edited_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "maxItems": 100
+                    },
+                    "and": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": "object",
+                          "properties": {
+                            "property": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "rich_text": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "url": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "email": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "phone_number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                },
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                },
+                                "starts_with": {
+                                  "type": "string"
+                                },
+                                "ends_with": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "number": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "number"
+                                },
+                                "does_not_equal": {
+                                  "type": "number"
+                                },
+                                "contains": {
+                                  "type": "number"
+                                },
+                                "does_not_contain": {
+                                  "type": "number"
+                                },
+                                "starts_with": {
+                                  "type": "number"
+                                },
+                                "ends_with": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "checkbox": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "boolean"
+                                },
+                                "does_not_equal": {
+                                  "type": "boolean"
+                                }
+                              }
+                            },
+                            "select": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "multi_select": {
+                              "type": "object",
+                              "properties": {
+                                "contains": {
+                                  "type": "string"
+                                },
+                                "does_not_contain": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "status": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string"
+                                },
+                                "does_not_equal": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "date": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "created_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            },
+                            "last_edited_time": {
+                              "type": "object",
+                              "properties": {
+                                "equals": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "after": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_before": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "on_or_after": {
+                                  "type": "string",
+                                  "format": "date"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "maxItems": 100
+                    }
                   },
                   "sorts": {
                     "type": "array",
@@ -273,9 +816,15 @@
                     "description": "When supplied, returns a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results."
                   },
                   "page_size": {
-                    "type": "integer",
+                    "type": "number",
                     "description": "The number of items from the full list desired in the response. Maximum: 100",
                     "default": 100
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "in_trash": {
+                    "type": "boolean"
                   }
                 }
               }
