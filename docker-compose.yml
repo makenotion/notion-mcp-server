@@ -1,8 +1,6 @@
 services:
   notion-mcp-server:
     build: .
-    environment:
-      OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer ntn_XXXXX", "Notion-Version": "2022-06-28"}'
     stdin_open: true
     tty: true
-    restart: unless-stopped 
+    restart: unless-stopped
