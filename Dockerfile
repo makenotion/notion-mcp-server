@@ -19,7 +19,7 @@ COPY . .
 RUN --mount=type=cache,target=/root/.npm npm run build
 
 # Install package globally
-# RUN --mount=type=cache,target=/root/.npm npm link
+RUN --mount=type=cache,target=/root/.npm npm link
 
 # Minimal image for runtime
 FROM node:20-slim
