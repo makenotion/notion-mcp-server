@@ -23,6 +23,7 @@ RUN npm link
 FROM node:20-slim
 
 # Copy built package from builder stage
+COPY scripts/notion-openapi.json /usr/local/scripts/
 COPY --from=builder /usr/local/lib/node_modules/@notionhq/notion-mcp-server /usr/local/lib/node_modules/@notionhq/notion-mcp-server
 COPY --from=builder /usr/local/bin/notion-mcp-server /usr/local/bin/notion-mcp-server
 
