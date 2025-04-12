@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Use Node.js LTS as the base image
 FROM node:20-slim AS builder
 
