@@ -128,7 +128,7 @@ export class MCPProxy {
     if (!headersJson) {
       return {
         Authorization: `Bearer ${process.env.OPENAPI_MCP_NOTION_API_TOKEN}`,
-        "Notion-Version": process.env.OPENAPI_MCP_NOTION_VERSION
+        "Notion-Version": process.env.OPENAPI_MCP_NOTION_VERSION || '2022-06-28'
       }
     }
 
