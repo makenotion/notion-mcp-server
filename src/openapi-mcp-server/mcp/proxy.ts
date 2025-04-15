@@ -126,7 +126,10 @@ export class MCPProxy {
   private parseHeadersFromEnv(): Record<string, string> {
     const headersJson = process.env.OPENAPI_MCP_HEADERS
     if (!headersJson) {
-      return {}
+      return {
+        Authorization: `Bearer ${process.env.OPENAPI_MCP_NOTION_API_TOKEN}`,
+        "Notion-Version": process.env.OPENAPI_MCP_NOTION_VERSION
+      }
     }
 
     try {
