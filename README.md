@@ -4,6 +4,10 @@
 
 This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro). 
 
+<a href="https://glama.ai/mcp/servers/@makenotion/notion-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@makenotion/notion-mcp-server/badge" alt="Notion Server MCP server" />
+</a>
+
 ![mcp-demo](https://github.com/user-attachments/assets/e3ff90a7-7801-48a9-b807-f7dd47f0d3d6)
 
 ### Installation
