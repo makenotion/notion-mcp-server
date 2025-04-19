@@ -1312,14 +1312,30 @@
                 ],
                 "properties": {
                   "parent": {
-                    "type": "object",
-                    "properties": {
-                      "page_id": {
-                        "type": "string",
-                        "format": "uuid"
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "page_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        },
+                        "required": ["page_id"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "database_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        },
+                        "required": ["database_id"],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": ["page_id"]
+                    ]
                   },
                   "properties": {
                     "type": "object",
