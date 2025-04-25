@@ -39,7 +39,41 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
 ```
 
 ##### Using Docker:
-You can also run the MCP server using Docker. First, build the Docker image:
+
+There are two options for running the MCP server with Docker:
+
+###### Option 1: Using the official Docker Hub image:
+
+Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
+
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "OPENAPI_MCP_HEADERS",
+        "mcp/notion"
+      ],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ntn_****\",\"Notion-Version\":\"2022-06-28\"}"
+      }
+    }
+  }
+}
+```
+
+This approach:
+- Uses the official Docker Hub image
+- Properly handles JSON escaping via environment variables
+- Provides a more reliable configuration method
+
+###### Option 2: Building the Docker image locally:
+
+You can also build and run the Docker image locally. First, build the Docker image:
 
 ```bash
 docker-compose build
