@@ -4,6 +4,7 @@ import type { AxiosInstance } from 'axios'
 import FormData from 'form-data'
 import fs from 'fs'
 import { isFileUploadParameter } from '../openapi/file-upload'
+import { normalizeRequestPayload } from '../middleware/request-normalizer'
 
 export type HttpClientConfig = {
   baseUrl: string
@@ -110,20 +111,23 @@ export class HttpClient {
       throw new Error('Operation ID is required')
     }
 
+    // Normalize the request parameters to fix common structural issues
+    const normalizedParams = normalizeRequestPayload(params);
+
     // Handle file uploads if present
-    const formData = await this.prepareFileUpload(operation, params)
+    const formData = await this.prepareFileUpload(operation, normalizedParams)
 
     // Separate parameters based on their location
     const urlParameters: Record<string, any> = {}
-    const bodyParams: Record<string, any> = formData || { ...params }
+    const bodyParams: Record<string, any> = formData || { ...normalizedParams }
 
     // Extract path and query parameters based on operation definition
     if (operation.parameters) {
       for (const param of operation.parameters) {
         if ('name' in param && param.name && param.in) {
           if (param.in === 'path' || param.in === 'query') {
-            if (params[param.name] !== undefined) {
-              urlParameters[param.name] = params[param.name]
+            if (normalizedParams[param.name] !== undefined) {
+              urlParameters[param.name] = normalizedParams[param.name]
               if (!formData) {
                 delete bodyParams[param.name]
               }
