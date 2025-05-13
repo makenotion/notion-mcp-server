@@ -3,7 +3,7 @@ import OpenAPIClientAxios from 'openapi-client-axios'
 import type { AxiosInstance } from 'axios'
 import FormData from 'form-data'
 import fs from 'fs'
-import { Headers } from './Headers'
+import { Headers } from './polyfill-headers'
 import { isFileUploadParameter } from '../openapi/file-upload'
 
 export type HttpClientConfig = {
