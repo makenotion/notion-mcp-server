@@ -35,7 +35,6 @@
     "@types/json-schema": "^7.0.15",
     "@types/mustache": "^4.2.5",
     "@types/node": "^20.17.16",
-    "@types/node-fetch": "^2.6.12",
     "@types/which": "^3.0.4",
     "@vitest/coverage-v8": "3.1.1",
     "esbuild": "^0.25.2",
