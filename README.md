@@ -19,7 +19,14 @@ For example, you can create a read-only integration token by giving only "Read c
 
 ![Notion Integration Token Capabilities showing Read content checked](docs/images/integrations-capabilities.png)
 
-#### 2. Adding MCP config to your client:
+#### 2. Connecting content to integration:
+Ensure relevant pages and databases are connected to your integration.
+
+To do this, you'll need to visit that page, and click on the 3 dots, and select "Connect to integration". 
+
+![Adding Integration Token to Notion Connections](docs/images/connections.png)
+
+#### 3. Adding MCP config to your client:
 
 ##### Using npm:
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
@@ -102,13 +109,6 @@ Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.jso
 Don't forget to replace `ntn_****` with your integration secret. Find it from your integration configuration tab:
 
 ![Copying your Integration token from the Configuration tab in the developer portal](https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a)
-
-#### 3. Connecting content to integration:
-Ensure relevant pages and databases are connected to your integration.
-
-To do this, you'll need to visit that page, and click on the 3 dots, and select "Connect to integration". 
-
-![Adding Integration Token to Notion Connections](docs/images/connections.png)
 
 ### Examples
 
