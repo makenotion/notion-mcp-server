@@ -986,8 +986,7 @@
                                     "type": "object",
                                     "properties": {
                                       "content": {
-                                        "type": "string",
-                                        "maxLength": 2000
+                                        "type": "string"
                                       },
                                       "link": {
                                         "type": [
@@ -1041,8 +1040,7 @@
                                     "type": "object",
                                     "properties": {
                                       "content": {
-                                        "type": "string",
-                                        "maxLength": 2000
+                                        "type": "string"
                                       },
                                       "link": {
                                         "type": [
@@ -1252,8 +1250,7 @@
                               "type": "object",
                               "properties": {
                                 "content": {
-                                  "type": "string",
-                                  "maxLength": 2000
+                                  "type": "string"
                                 },
                                 "link": {
                                   "type": [
@@ -1406,8 +1403,7 @@
                               ],
                               "properties": {
                                 "content": {
-                                  "type": "string",
-                                  "maxLength": 2000
+                                  "type": "string"
                                 }
                               }
                             }
@@ -1528,8 +1524,7 @@
                           "type": "object",
                           "properties": {
                             "content": {
-                              "type": "string",
-                              "maxLength": 2000
+                              "type": "string"
                             },
                             "link": {
                               "type": [
@@ -1620,8 +1615,7 @@
                           "type": "object",
                           "properties": {
                             "content": {
-                              "type": "string",
-                              "maxLength": 2000
+                              "type": "string"
                             },
                             "link": {
                               "type": [
@@ -1665,8 +1659,7 @@
                           "type": "object",
                           "properties": {
                             "content": {
-                              "type": "string",
-                              "maxLength": 2000
+                              "type": "string"
                             },
                             "link": {
                               "type": [
