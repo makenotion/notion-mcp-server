@@ -1,5 +1,6 @@
 # Notion MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@makernotion/notion-mcp-server)](https://smithery.ai/server/@makernotion/notion-mcp-server)
 ![notion-mcp-sm](https://github.com/user-attachments/assets/6c07003c-8455-4636-b298-d60ffdf46cd8)
 
 This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro). 
@@ -8,7 +9,15 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 
 ### Installation
 
-#### 1. Setting up Integration in Notion:
+#### Installing via Smithery
+
+To install Notion API Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@makernotion/notion-mcp-server):
+
+```bash
+npx -y @smithery/cli install @makernotion/notion-mcp-server --client claude
+```
+
+#### Setting up Integration in Notion:
 Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a new **internal** integration or select an existing one.
 
 ![Creating a Notion Integration token](docs/images/integrations-creation.png)
@@ -19,14 +28,14 @@ For example, you can create a read-only integration token by giving only "Read c
 
 ![Notion Integration Token Capabilities showing Read content checked](docs/images/integrations-capabilities.png)
 
-#### 2. Connecting content to integration:
+#### Connecting content to integration:
 Ensure relevant pages and databases are connected to your integration.
 
 To do this, you'll need to visit that page, and click on the 3 dots, and select "Connect to integration". 
 
 ![Adding Integration Token to Notion Connections](docs/images/connections.png)
 
-#### 3. Adding MCP config to your client:
+#### Adding MCP config to your client:
 
 ##### Using npm:
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)

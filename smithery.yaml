@@ -1,0 +1,29 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => {
+      const env = { OPENAPI_MCP_HEADERS: config.openapiMcpHeaders };
+      if (config.baseUrl) env.BASE_URL = config.baseUrl;
+      return { command: 'notion-mcp-server', args: [], env };
+    }
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - openapiMcpHeaders
+    properties:
+      openapiMcpHeaders:
+        type: string
+        default: "{}"
+        description: JSON string for HTTP headers, must include Authorization and
+          Notion-Version
+      baseUrl:
+        type: string
+        description: Optional override for Notion API base URL
+  exampleConfig:
+    openapiMcpHeaders: '{"Authorization":"Bearer ntn_abcdef","Notion-Version":"2022-06-28"}'
+    baseUrl: https://api.notion.com
