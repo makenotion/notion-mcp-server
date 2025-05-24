@@ -30,13 +30,14 @@ To do this, you'll need to visit that page, and click on the 3 dots, and select 
 
 ##### Using npm:
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
+Note that the version is pinned.
 
 ```javascript
 {
   "mcpServers": {
     "notionApi": {
       "command": "npx",
-      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "args": ["-y", "@notionhq/notion-mcp-server@1.8.1"],
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
       }
