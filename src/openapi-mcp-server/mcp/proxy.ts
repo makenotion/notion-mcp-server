@@ -124,21 +124,17 @@ export class MCPProxy {
   }
 
   private parseHeadersFromEnv(): Record<string, string> {
-    const headersJson = process.env.OPENAPI_MCP_HEADERS
-    if (!headersJson) {
+    const apiKey = process.env.NOTION_API_KEY
+    const apiVersion = process.env.NOTION_API_VERSION || '2022-06-28'
+
+    if (!apiKey) {
+      console.warn('NOTION_API_KEY environment variable must be set')
       return {}
     }
 
-    try {
-      const headers = JSON.parse(headersJson)
-      if (typeof headers !== 'object' || headers === null) {
-        console.warn('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', typeof headers)
-        return {}
-      }
-      return headers
-    } catch (error) {
-      console.warn('Failed to parse OPENAPI_MCP_HEADERS environment variable:', error)
-      return {}
+    return {
+      'Authorization': `Bearer ${apiKey}`,
+      'Notion-Version': apiVersion
     }
   }
 

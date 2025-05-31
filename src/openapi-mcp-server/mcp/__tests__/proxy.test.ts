@@ -11,10 +11,18 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js')
 describe('MCPProxy', () => {
   let proxy: MCPProxy
   let mockOpenApiSpec: OpenAPIV3.Document
+  const originalEnv = process.env
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
+    
+    // Reset environment for each test
+    process.env = { ...originalEnv }
+    
+    // Set default test values
+    process.env.NOTION_API_KEY = 'token123'
+    process.env.NOTION_API_VERSION = '2022-06-28'
 
     // Setup minimal OpenAPI spec for testing
     mockOpenApiSpec = {
@@ -39,6 +47,11 @@ describe('MCPProxy', () => {
     }
 
     proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+  })
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv
   })
 
   describe('listTools handler', () => {
@@ -84,17 +97,17 @@ describe('MCPProxy', () => {
           'content-type': 'application/json',
         }),
       }
-      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+        ; (HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
 
-      // Set up the openApiLookup with our test operation
-      ;(proxy as any).openApiLookup = {
-        'API-getTest': {
-          operationId: 'getTest',
-          responses: { '200': { description: 'Success' } },
-          method: 'get',
-          path: '/test',
-        },
-      }
+        // Set up the openApiLookup with our test operation
+        ; (proxy as any).openApiLookup = {
+          'API-getTest': {
+            operationId: 'getTest',
+            responses: { '200': { description: 'Success' } },
+            method: 'get',
+            path: '/test',
+          },
+        }
 
       const server = (proxy as any).server
       const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
@@ -146,14 +159,14 @@ describe('MCPProxy', () => {
       // Set up the openApiLookup with a long tool name
       const longToolName = 'a'.repeat(65)
       const truncatedToolName = longToolName.slice(0, 64)
-      ;(proxy as any).openApiLookup = {
-        [truncatedToolName]: {
-          operationId: longToolName,
-          responses: { '200': { description: 'Success' } },
-          method: 'get',
-          path: '/test'
-        }
-      };
+        ; (proxy as any).openApiLookup = {
+          [truncatedToolName]: {
+            operationId: longToolName,
+            responses: { '200': { description: 'Success' } },
+            method: 'get',
+            path: '/test'
+          }
+        };
 
       const server = (proxy as any).server;
       const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function');
@@ -200,39 +213,40 @@ describe('MCPProxy', () => {
       process.env = originalEnv
     })
 
-    it('should parse valid JSON headers from env', () => {
-      process.env.OPENAPI_MCP_HEADERS = JSON.stringify({
-        Authorization: 'Bearer token123',
-        'X-Custom-Header': 'test',
-      })
+    it('should parse API key and version from env', () => {
+      process.env.NOTION_API_KEY = 'token123'
+      process.env.NOTION_API_VERSION = '2023-01-01'
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
       expect(HttpClient).toHaveBeenCalledWith(
         expect.objectContaining({
           headers: {
-            Authorization: 'Bearer token123',
-            'X-Custom-Header': 'test',
+            Authorization: `Bearer token123`,
+            'Notion-Version': '2023-01-01',
           },
         }),
         expect.anything(),
       )
     })
 
-    it('should return empty object when env var is not set', () => {
-      delete process.env.OPENAPI_MCP_HEADERS
+    it('should use default API version when not provided', () => {
+      process.env.NOTION_API_KEY = 'token123'
+      delete process.env.NOTION_API_VERSION
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
       expect(HttpClient).toHaveBeenCalledWith(
         expect.objectContaining({
-          headers: {},
+          headers: {
+            Authorization: `Bearer token123`,
+            'Notion-Version': '2022-06-28',
+          },
         }),
         expect.anything(),
       )
     })
 
-    it('should return empty object and warn on invalid JSON', () => {
-      const consoleSpy = vi.spyOn(console, 'warn')
-      process.env.OPENAPI_MCP_HEADERS = 'invalid json'
+    it('should return empty object when API key is not set', () => {
+      delete process.env.NOTION_API_KEY
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
       expect(HttpClient).toHaveBeenCalledWith(
@@ -241,21 +255,6 @@ describe('MCPProxy', () => {
         }),
         expect.anything(),
       )
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to parse OPENAPI_MCP_HEADERS environment variable:', expect.any(Error))
-    })
-
-    it('should return empty object and warn on non-object JSON', () => {
-      const consoleSpy = vi.spyOn(console, 'warn')
-      process.env.OPENAPI_MCP_HEADERS = '"string"'
-
-      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
-      expect(HttpClient).toHaveBeenCalledWith(
-        expect.objectContaining({
-          headers: {},
-        }),
-        expect.anything(),
-      )
-      expect(consoleSpy).toHaveBeenCalledWith('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', 'string')
     })
   })
   describe('connect', () => {

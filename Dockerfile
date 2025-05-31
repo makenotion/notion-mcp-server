@@ -31,7 +31,7 @@ COPY --from=builder /usr/local/lib/node_modules/@notionhq/notion-mcp-server /usr
 COPY --from=builder /usr/local/bin/notion-mcp-server /usr/local/bin/notion-mcp-server
 
 # Set default environment variables
-ENV OPENAPI_MCP_HEADERS="{}"
+ENV NOTION_API_VERSION="2022-06-28"
 
 # Set entrypoint
 ENTRYPOINT ["notion-mcp-server"]
