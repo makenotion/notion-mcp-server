@@ -123,7 +123,7 @@ Don't forget to replace `ntn_****` with your integration secret. Find it from yo
 To install Notion API Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@makernotion/notion-mcp-server):
 
 ```bash
-npx -y @smithery/cli install @makernotion/notion-mcp-server --client claude
+npx -y @smithery/cli install @makenotion/notion-mcp-server --client claude
 ```
 
 ### Examples
