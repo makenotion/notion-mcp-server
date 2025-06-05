@@ -34,6 +34,9 @@ Alternatively, you can grant page access individually. You'll need to visit the 
 #### 3. Adding MCP config to your client:
 
 ##### Using npm:
+
+**Cursor & Claude:**
+
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
 
 ```javascript
@@ -45,6 +48,27 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
       }
+    }
+  }
+}
+```
+
+**Zed**
+
+Add the following to your `settings.json`
+
+```
+{
+  "context_servers": {
+    "some-context-server": {
+      "command": {
+        "path": "npx",
+        "args": ["-y", "@notionhq/notion-mcp-server"],
+        "env": {
+          "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ntn_****\", \"Notion-Version\": \"2022-06-28\" }"
+        }
+      },
+      "settings": {}
     }
   }
 }
