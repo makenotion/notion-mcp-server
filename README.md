@@ -57,7 +57,7 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
 
 Add the following to your `settings.json`
 
-```javascript
+```json
 {
   "context_servers": {
     "some-context-server": {
