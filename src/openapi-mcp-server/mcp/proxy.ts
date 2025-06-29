@@ -78,6 +78,19 @@ export class MCPProxy {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: params } = request.params
 
+      // 🛠 Fix: Stringified Objekte (parent, data, new_parent) destringifizieren
+      ['parent', 'data', 'new_parent'].forEach((key) => {
+        const val = (params as any)[key]
+        if (typeof val === 'string' && val.trim().startsWith('{')) {
+          try {
+            (params as any)[key] = JSON.parse(val)
+            console.log(`✅ MCPProxy fix: ${key} erfolgreich geparsed`)
+          } catch (e) {
+            console.warn(`⚠️ MCPProxy Warnung: Konnte ${key} nicht parsen`, val)
+          }
+        }
+      })
+
       // Find the operation in OpenAPI spec
       const operation = this.findOperation(name)
       if (!operation) {
@@ -92,22 +105,21 @@ export class MCPProxy {
         return {
           content: [
             {
-              type: 'text', // currently this is the only type that seems to be used by mcp server
-              text: JSON.stringify(response.data), // TODO: pass through the http status code text?
+              type: 'text',
+              text: JSON.stringify(response.data),
             },
           ],
         }
       } catch (error) {
         console.error('Error in tool call', error)
         if (error instanceof HttpClientError) {
-          console.error('HttpClientError encountered, returning structured error', error)
           const data = error.data?.response?.data ?? error.data ?? {}
           return {
             content: [
               {
                 type: 'text',
                 text: JSON.stringify({
-                  status: 'error', // TODO: get this from http status code?
+                  status: 'error',
                   ...(typeof data === 'object' ? data : { data: data }),
                 }),
               },
@@ -156,17 +168,17 @@ export class MCPProxy {
 
   private truncateToolName(name: string): string {
     if (name.length <= 64) {
-      return name;
+      return name
     }
-    return name.slice(0, 64);
+    return name.slice(0, 64)
   }
 
   async connect(transport: Transport) {
-    // The SDK will handle stdio communication
     await this.server.connect(transport)
   }
 
   getServer() {
     return this.server
   }
+}
 }
