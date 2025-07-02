@@ -124,22 +124,34 @@ export class MCPProxy {
   }
 
   private parseHeadersFromEnv(): Record<string, string> {
+    // First try OPENAPI_MCP_HEADERS (existing behavior)
     const headersJson = process.env.OPENAPI_MCP_HEADERS
-    if (!headersJson) {
-      return {}
+    if (headersJson) {
+      try {
+        const headers = JSON.parse(headersJson)
+        if (typeof headers !== 'object' || headers === null) {
+          console.warn('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', typeof headers)
+        } else if (Object.keys(headers).length > 0) {
+          // Only use OPENAPI_MCP_HEADERS if it contains actual headers
+          return headers
+        }
+        // If OPENAPI_MCP_HEADERS is empty object, fall through to try NOTION_TOKEN
+      } catch (error) {
+        console.warn('Failed to parse OPENAPI_MCP_HEADERS environment variable:', error)
+        // Fall through to try NOTION_TOKEN
+      }
     }
 
-    try {
-      const headers = JSON.parse(headersJson)
-      if (typeof headers !== 'object' || headers === null) {
-        console.warn('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', typeof headers)
-        return {}
+    // Alternative: try NOTION_TOKEN
+    const notionToken = process.env.NOTION_TOKEN
+    if (notionToken) {
+      return {
+        'Authorization': `Bearer ${notionToken}`,
+        'Notion-Version': '2022-06-28'
       }
-      return headers
-    } catch (error) {
-      console.warn('Failed to parse OPENAPI_MCP_HEADERS environment variable:', error)
-      return {}
     }
+
+    return {}
   }
 
   private getContentType(headers: Headers): 'text' | 'image' | 'binary' {

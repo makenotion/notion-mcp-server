@@ -257,6 +257,70 @@ describe('MCPProxy', () => {
       )
       expect(consoleSpy).toHaveBeenCalledWith('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', 'string')
     })
+
+    it('should use NOTION_TOKEN when OPENAPI_MCP_HEADERS is not set', () => {
+      delete process.env.OPENAPI_MCP_HEADERS
+      process.env.NOTION_TOKEN = 'ntn_test_token_123'
+
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            'Authorization': 'Bearer ntn_test_token_123',
+            'Notion-Version': '2022-06-28'
+          },
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('should prioritize OPENAPI_MCP_HEADERS over NOTION_TOKEN when both are set', () => {
+      process.env.OPENAPI_MCP_HEADERS = JSON.stringify({
+        Authorization: 'Bearer custom_token',
+        'Custom-Header': 'custom_value',
+      })
+      process.env.NOTION_TOKEN = 'ntn_test_token_123'
+
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            Authorization: 'Bearer custom_token',
+            'Custom-Header': 'custom_value',
+          },
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('should return empty object when neither OPENAPI_MCP_HEADERS nor NOTION_TOKEN are set', () => {
+      delete process.env.OPENAPI_MCP_HEADERS
+      delete process.env.NOTION_TOKEN
+
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {},
+        }),
+        expect.anything(),
+      )
+    })
+
+    it('should use NOTION_TOKEN when OPENAPI_MCP_HEADERS is empty object', () => {
+      process.env.OPENAPI_MCP_HEADERS = '{}'
+      process.env.NOTION_TOKEN = 'ntn_test_token_123'
+
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            'Authorization': 'Bearer ntn_test_token_123',
+            'Notion-Version': '2022-06-28'
+          },
+        }),
+        expect.anything(),
+      )
+    })
   })
   describe('connect', () => {
     it('should connect to transport', async () => {
