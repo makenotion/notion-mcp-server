@@ -185,6 +185,7 @@ export class OpenAPIToMCPConverter {
         if (mcpMethod) {
           const uniqueName = this.ensureUniqueName(mcpMethod.name)
           mcpMethod.name = uniqueName
+          mcpMethod.description = this.getDescription(operation.summary || operation.description || '')
           tools[apiName]!.methods.push(mcpMethod)
           openApiLookup[apiName + '-' + uniqueName] = { ...operation, method, path }
           zip[apiName + '-' + uniqueName] = { openApi: { ...operation, method, path }, mcp: mcpMethod }
@@ -212,7 +213,7 @@ export class OpenAPIToMCPConverter {
           type: 'function',
           function: {
             name: operation.operationId!,
-            description: operation.summary || operation.description || '',
+            description: this.getDescription(operation.summary || operation.description || ''),
             parameters: parameters as FunctionParameters,
           },
         }
@@ -238,7 +239,7 @@ export class OpenAPIToMCPConverter {
         const parameters = this.convertOperationToJsonSchema(operation, method, path)
         const tool: Tool = {
           name: operation.operationId!,
-          description: operation.summary || operation.description || '',
+          description: this.getDescription(operation.summary || operation.description || ''),
           input_schema: parameters as Tool['input_schema'],
         }
         tools.push(tool)
@@ -515,5 +516,9 @@ export class OpenAPIToMCPConverter {
   private generateUniqueSuffix(): string {
     this.nameCounter += 1
     return this.nameCounter.toString().padStart(4, '0')
+  }
+
+  private getDescription(description: string): string {
+    return "Notion | " + description
   }
 }
