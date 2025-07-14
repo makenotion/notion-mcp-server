@@ -37,8 +37,8 @@ export async function startServer(args: string[] = process.argv) {
 Usage: notion-mcp-server [options]
 
 Options:
-  --transport <type>     Transport type: 'stdio' or 'sse' (default: stdio)
-  --port <number>        Port for HTTP server when using SSE transport (default: 3000)
+  --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
+  --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
   --auth-token <token>   Bearer token for HTTP transport authentication (optional)
   --help, -h             Show this help message
 
@@ -50,10 +50,10 @@ Environment Variables:
 Examples:
   notion-mcp-server                                    # Use stdio transport (default)
   notion-mcp-server --transport stdio                  # Use stdio transport explicitly
-  notion-mcp-server --transport sse                    # Use SSE/Streamable HTTP transport on port 3000
-  notion-mcp-server --transport sse --port 8080        # Use SSE transport on port 8080
-  notion-mcp-server --transport sse --auth-token mytoken # Use SSE transport with custom auth token
-  AUTH_TOKEN=mytoken notion-mcp-server --transport sse # Use SSE transport with auth token from env var
+  notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
+  notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
+  notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
+  AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
 `);
         process.exit(0);
       }
@@ -71,7 +71,7 @@ Examples:
     const proxy = await initProxy(specPath, baseUrl)
     await proxy.connect(new StdioServerTransport())
     return proxy.getServer()
-  } else if (transport === 'sse') {
+  } else if (transport === 'http') {
     // Use Streamable HTTP transport
     const app = express()
     app.use(express.json())
@@ -120,7 +120,7 @@ Examples:
       res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        transport: 'sse',
+        transport: 'http',
         port: options.port
       })
     })
@@ -190,7 +190,7 @@ Examples:
       }
     })
 
-    // Handle GET requests for server-to-client notifications via SSE
+    // Handle GET requests for server-to-client notifications via Streamable HTTP
     app.get('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
       if (!sessionId || !transports[sessionId]) {
@@ -228,7 +228,7 @@ Examples:
     // Return a dummy server for compatibility
     return { close: () => {} }
   } else {
-    throw new Error(`Unsupported transport: ${transport}. Use 'stdio' or 'sse'.`)
+    throw new Error(`Unsupported transport: ${transport}. Use 'stdio' or 'http'.`)
   }
 }
 

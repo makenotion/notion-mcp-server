@@ -159,7 +159,7 @@ This approach:
 You can also build and run the Docker image locally. First, build the Docker image:
 
 ```bash
-docker-compose build
+docker compose build
 ```
 
 Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
@@ -232,28 +232,28 @@ npx @notionhq/notion-mcp-server
 npx @notionhq/notion-mcp-server --transport stdio
 ```
 
-#### Streamable HTTP Transport (SSE)
-For web-based applications or clients that prefer HTTP communication, you can use the Streamable HTTP transport with Server-Sent Events:
+#### Streamable HTTP Transport
+For web-based applications or clients that prefer HTTP communication, you can use the Streamable HTTP transport:
 
 ```bash
-# Run with HTTP/SSE transport on port 3000 (default)
-npx @notionhq/notion-mcp-server --transport sse
+# Run with Streamable HTTP transport on port 3000 (default)
+npx @notionhq/notion-mcp-server --transport http
 
 # Run on a custom port
-npx @notionhq/notion-mcp-server --transport sse --port 8080
+npx @notionhq/notion-mcp-server --transport http --port 8080
 
 # Run with a custom authentication token
-npx @notionhq/notion-mcp-server --transport sse --auth-token "your-secret-token"
+npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
 ```
 
-When using SSE transport, the server will be available at `http://0.0.0.0:<port>/mcp`.
+When using Streamable HTTP transport, the server will be available at `http://0.0.0.0:<port>/mcp`.
 
 ##### Authentication
-The SSE transport requires bearer token authentication for security. You have three options:
+The Streamable HTTP transport requires bearer token authentication for security. You have three options:
 
 **Option 1: Auto-generated token (recommended for development)**
 ```bash
-npx @notionhq/notion-mcp-server --transport sse
+npx @notionhq/notion-mcp-server --transport http
 ```
 The server will generate a secure random token and display it in the console:
 ```
@@ -263,18 +263,18 @@ Use this token in the Authorization header: Bearer a1b2c3d4e5f6789abcdef01234567
 
 **Option 2: Custom token via command line (recommended for production)**
 ```bash
-npx @notionhq/notion-mcp-server --transport sse --auth-token "your-secret-token"
+npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
 ```
 
 **Option 3: Custom token via environment variable (recommended for production)**
 ```bash
-AUTH_TOKEN="your-secret-token" npx @notionhq/notion-mcp-server --transport sse
+AUTH_TOKEN="your-secret-token" npx @notionhq/notion-mcp-server --transport http
 ```
 
 The command line argument `--auth-token` takes precedence over the `AUTH_TOKEN` environment variable if both are provided.
 
 ##### Making HTTP Requests
-All requests to the SSE transport must include the bearer token in the Authorization header:
+All requests to the Streamable HTTP transport must include the bearer token in the Authorization header:
 
 ```bash
 # Example request
