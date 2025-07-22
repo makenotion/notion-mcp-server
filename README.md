@@ -48,6 +48,22 @@ Alternatively, you can grant page access individually. You'll need to visit the 
 
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
 
+**Option 1: Using NOTION_TOKEN (recommended)**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+**Option 2: Using OPENAPI_MCP_HEADERS (for advanced use cases)**
 ```javascript
 {
   "mcpServers": {
@@ -91,6 +107,28 @@ There are two options for running the MCP server with Docker:
 
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
 
+**Using NOTION_TOKEN (recommended):**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e", "NOTION_TOKEN",
+        "mcp/notion"
+      ],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+**Using OPENAPI_MCP_HEADERS (for advanced use cases):**
 ```javascript
 {
   "mcpServers": {
@@ -121,11 +159,31 @@ This approach:
 You can also build and run the Docker image locally. First, build the Docker image:
 
 ```bash
-docker-compose build
+docker compose build
 ```
 
 Then, add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
 
+**Using NOTION_TOKEN (recommended):**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "NOTION_TOKEN=ntn_****",
+        "notion-mcp-server"
+      ]
+    }
+  }
+}
+```
+
+**Using OPENAPI_MCP_HEADERS (for advanced use cases):**
 ```javascript
 {
   "mcpServers": {
@@ -158,6 +216,76 @@ To install Notion API Server for Claude Desktop automatically via [Smithery](htt
 ```bash
 npx -y @smithery/cli install @makenotion/notion-mcp-server --client claude
 ```
+
+### Transport Options
+
+The Notion MCP Server supports two transport modes:
+
+#### STDIO Transport (Default)
+The default transport mode uses standard input/output for communication. This is the standard MCP transport used by most clients like Claude Desktop.
+
+```bash
+# Run with default stdio transport
+npx @notionhq/notion-mcp-server
+
+# Or explicitly specify stdio
+npx @notionhq/notion-mcp-server --transport stdio
+```
+
+#### Streamable HTTP Transport
+For web-based applications or clients that prefer HTTP communication, you can use the Streamable HTTP transport:
+
+```bash
+# Run with Streamable HTTP transport on port 3000 (default)
+npx @notionhq/notion-mcp-server --transport http
+
+# Run on a custom port
+npx @notionhq/notion-mcp-server --transport http --port 8080
+
+# Run with a custom authentication token
+npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
+```
+
+When using Streamable HTTP transport, the server will be available at `http://0.0.0.0:<port>/mcp`.
+
+##### Authentication
+The Streamable HTTP transport requires bearer token authentication for security. You have three options:
+
+**Option 1: Auto-generated token (recommended for development)**
+```bash
+npx @notionhq/notion-mcp-server --transport http
+```
+The server will generate a secure random token and display it in the console:
+```
+Generated auth token: a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
+Use this token in the Authorization header: Bearer a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
+```
+
+**Option 2: Custom token via command line (recommended for production)**
+```bash
+npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
+```
+
+**Option 3: Custom token via environment variable (recommended for production)**
+```bash
+AUTH_TOKEN="your-secret-token" npx @notionhq/notion-mcp-server --transport http
+```
+
+The command line argument `--auth-token` takes precedence over the `AUTH_TOKEN` environment variable if both are provided.
+
+##### Making HTTP Requests
+All requests to the Streamable HTTP transport must include the bearer token in the Authorization header:
+
+```bash
+# Example request
+curl -H "Authorization: Bearer your-token-here" \
+     -H "Content-Type: application/json" \
+     -H "mcp-session-id: your-session-id" \
+     -d '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' \
+     http://localhost:3000/mcp
+```
+
+**Note:** Make sure to set either the `NOTION_TOKEN` environment variable (recommended) or the `OPENAPI_MCP_HEADERS` environment variable with your Notion integration token when using either transport mode.
 
 ### Examples
 
