@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/makenotion-notion-mcp-server-badge.png)](https://mseep.ai/app/makenotion-notion-mcp-server)
+
 # Notion MCP Server
 
 > [!NOTE] 
