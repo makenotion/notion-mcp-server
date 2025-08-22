@@ -10,3 +10,7 @@ bin/
 .cursor
 
 .DS_Store
+
+.env
+
+.vscode
