@@ -111,7 +111,11 @@ describe('MCPProxy', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: 'success' }),
+            text: JSON.stringify({
+              status: 'success',
+              statusCode: 200,
+              data: { message: 'success' },
+            }),
           },
         ],
       })
@@ -170,9 +174,59 @@ describe('MCPProxy', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: 'success' })
+            text: JSON.stringify({
+              status: 'success',
+              statusCode: 200,
+              data: { message: 'success' },
+            })
           }
         ]
+      })
+    })
+
+    it('should include HTTP status information in success responses', async () => {
+      // Mock HttpClient response with different status code
+      const mockResponse = {
+        data: { id: 123, name: 'Test Resource' },
+        status: 201,
+        headers: new Headers({
+          'content-type': 'application/json',
+        }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      // Set up the openApiLookup with our test operation
+      ;(proxy as any).openApiLookup = {
+        'API-createTest': {
+          operationId: 'createTest',
+          responses: { '201': { description: 'Created' } },
+          method: 'post',
+          path: '/test',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      const result = await callToolHandler({
+        params: {
+          name: 'API-createTest',
+          arguments: { name: 'New Resource' },
+        },
+      })
+
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              statusCode: 201,
+              data: { id: 123, name: 'Test Resource' },
+            }),
+          },
+        ],
       })
     })
   })

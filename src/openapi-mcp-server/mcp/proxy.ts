@@ -93,7 +93,11 @@ export class MCPProxy {
           content: [
             {
               type: 'text', // currently this is the only type that seems to be used by mcp server
-              text: JSON.stringify(response.data), // TODO: pass through the http status code text?
+              text: JSON.stringify({
+                status: 'success',
+                statusCode: response.status,
+                data: response.data,
+              }),
             },
           ],
         }
