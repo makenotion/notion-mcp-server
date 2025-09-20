@@ -1,6 +1,6 @@
 import { MCPProxy } from '../proxy'
 import { OpenAPIV3 } from 'openapi-types'
-import { HttpClient } from '../../client/http-client'
+import { HttpClient, HttpClientError } from '../../client/http-client'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
@@ -173,6 +173,52 @@ describe('MCPProxy', () => {
             text: JSON.stringify({ message: 'success' })
           }
         ]
+      })
+    })
+
+    it('should handle HttpClientError with status code information', async () => {
+      // Create a proper HttpClientError instance
+      const mockError = Object.create(HttpClientError.prototype)
+      mockError.status = 404
+      mockError.message = 'Not Found'
+      mockError.data = { message: 'Resource not found' }
+      mockError.name = 'HttpClientError'
+      
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockRejectedValue(mockError)
+
+      // Set up the openApiLookup with our test operation
+      ;(proxy as any).openApiLookup = {
+        'API-getTest': {
+          operationId: 'getTest',
+          responses: { '200': { description: 'Success' } },
+          method: 'get',
+          path: '/test',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      const result = await callToolHandler({
+        params: {
+          name: 'API-getTest',
+          arguments: {},
+        },
+      })
+
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              statusCode: 404,
+              statusText: 'Not Found',
+              message: 'Resource not found',
+            }),
+          },
+        ],
       })
     })
   })
