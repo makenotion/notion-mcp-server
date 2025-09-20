@@ -449,8 +449,8 @@ describe('OpenAPIToMCPConverter', () => {
       const getPetMethod = tools.API.methods.find((m) => m.name === 'getPet')
       expect(getPetMethod).toBeDefined()
 
-      // We just check that the description includes the error references now.
-      expect(getPetMethod?.description).toContain('404: The specified resource was not found')
+      // The description should be the operation summary with Notion prefix
+      expect(getPetMethod?.description).toBe('Notion | Get a pet by ID')
     })
 
     it('handles recursive schema references without expanding them', () => {
@@ -964,7 +964,7 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
             methods: [
               {
                 name: 'getAB',
-                description: 'Get an A-B object',
+                description: 'Notion | Get an A-B object',
                 // Error responses might not be listed here since none are defined.
                 // Just end the description with no Error Responses section.
                 inputSchema: {
@@ -1047,7 +1047,7 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
               },
               {
                 name: 'createAB',
-                description: 'Create an A-B object',
+                description: 'Notion | Create an A-B object',
                 inputSchema: {
                   type: 'object',
                   properties: {
@@ -1279,7 +1279,7 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
             methods: [
               {
                 name: 'getComposed',
-                description: 'Get a composed resource',
+                description: 'Notion | Get a composed resource',
                 inputSchema: {
                   type: 'object',
                   properties: {},

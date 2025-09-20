@@ -5,7 +5,17 @@ import fs from 'fs'
 import FormData from 'form-data'
 
 vi.mock('fs')
-vi.mock('form-data')
+vi.mock('form-data', () => {
+  const MockFormData = vi.fn().mockImplementation(() => ({
+    append: vi.fn(),
+    getHeaders: vi.fn()
+  }))
+  MockFormData.prototype.append = vi.fn()
+  MockFormData.prototype.getHeaders = vi.fn()
+  return {
+    default: MockFormData
+  }
+})
 
 describe('HttpClient File Upload', () => {
   let client: HttpClient
@@ -81,7 +91,6 @@ describe('HttpClient File Upload', () => {
     const mockFormDataHeaders = { 'content-type': 'multipart/form-data; boundary=---123' }
 
     vi.mocked(fs.createReadStream).mockReturnValue(mockFileStream as any)
-    vi.mocked(FormData.prototype.append).mockImplementation(() => {})
     vi.mocked(FormData.prototype.getHeaders).mockReturnValue(mockFormDataHeaders)
 
     const uploadPath = mockOpenApiSpec.paths['/upload']
@@ -127,7 +136,6 @@ describe('HttpClient File Upload', () => {
   })
 
   it('should handle multiple file uploads', async () => {
-    const mockFormData = new FormData()
     const mockFileStream1 = { pipe: vi.fn() }
     const mockFileStream2 = { pipe: vi.fn() }
     const mockFormDataHeaders = { 'content-type': 'multipart/form-data; boundary=---123' }
@@ -135,7 +143,6 @@ describe('HttpClient File Upload', () => {
     vi.mocked(fs.createReadStream)
       .mockReturnValueOnce(mockFileStream1 as any)
       .mockReturnValueOnce(mockFileStream2 as any)
-    vi.mocked(FormData.prototype.append).mockImplementation(() => {})
     vi.mocked(FormData.prototype.getHeaders).mockReturnValue(mockFormDataHeaders)
 
     const operation: OpenAPIV3.OperationObject = {
