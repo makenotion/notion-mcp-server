@@ -209,12 +209,12 @@ Don't forget to replace `ntn_****` with your integration secret. Find it from yo
 
 #### Installing via Smithery
 
-[![smithery badge](https://smithery.ai/badge/@makenotion/notion-mcp-server)](https://smithery.ai/server/@makenotion/notion-mcp-server)
+[![smithery badge](https://smithery.ai/badge/notion)](https://smithery.ai/server/notion)
 
-To install Notion API Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@makenotion/notion-mcp-server):
+To install Notion MCP Server automatically via [Smithery](https://smithery.ai/server/notion):
 
 ```bash
-npx -y @smithery/cli install @makenotion/notion-mcp-server --client claude
+npx -y @smithery/cli install notion
 ```
 
 ### Transport Options
