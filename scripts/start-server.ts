@@ -1,10 +1,11 @@
-import path from 'node:path'
-import { fileURLToPath } from 'url'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
-import { randomUUID, randomBytes } from 'node:crypto'
 import express from 'express'
+import { ConsoleAdapter, TraceMiddlewareOptions } from 'mcp-trace'
+import { randomBytes, randomUUID } from 'node:crypto'
+import path from 'node:path'
+import { fileURLToPath } from 'url'
 
 import { initProxy, ValidationError } from '../src/init-server'
 
@@ -12,8 +13,32 @@ export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
   const directory = path.dirname(filename)
   const specPath = path.resolve(directory, '../scripts/notion-openapi.json')
-  
+
   const baseUrl = process.env.BASE_URL ?? undefined
+
+  // Helper function to create trace options from CLI args and environment variables
+  function createTraceOptions(cliTraceEnabled: boolean): TraceMiddlewareOptions | undefined {
+    const traceEnabled = cliTraceEnabled || process.env.MCP_TRACE_ENABLED === 'true' || process.env.MCP_TRACE_ENABLED === '1'
+    if (!traceEnabled) {
+      return undefined
+    }
+
+    const traceOptions: TraceMiddlewareOptions = {
+      adapter: new ConsoleAdapter(),
+    }
+
+    // Configure log fields if specified
+    if (process.env.MCP_TRACE_LOG_FIELDS) {
+      try {
+        const logFields = JSON.parse(process.env.MCP_TRACE_LOG_FIELDS)
+        traceOptions.logFields = logFields
+      } catch (error) {
+        console.warn('Failed to parse MCP_TRACE_LOG_FIELDS, using defaults:', error)
+      }
+    }
+
+    return traceOptions
+  }
 
   // Parse command line arguments manually (similar to slack-mcp approach)
   function parseArgs() {
@@ -21,6 +46,7 @@ export async function startServer(args: string[] = process.argv) {
     let transport = 'stdio'; // default
     let port = 3000;
     let authToken: string | undefined;
+    let traceEnabled = false;
 
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--transport' && i + 1 < args.length) {
@@ -32,6 +58,8 @@ export async function startServer(args: string[] = process.argv) {
       } else if (args[i] === '--auth-token' && i + 1 < args.length) {
         authToken = args[i + 1];
         i++; // skip next argument
+      } else if (args[i] === '--trace' || args[i] === '--enable-trace') {
+        traceEnabled = true;
       } else if (args[i] === '--help' || args[i] === '-h') {
         console.log(`
 Usage: notion-mcp-server [options]
@@ -40,12 +68,15 @@ Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
   --auth-token <token>   Bearer token for HTTP transport authentication (optional)
+  --trace, --enable-trace Enable MCP tracing (optional)
   --help, -h             Show this help message
 
 Environment Variables:
   NOTION_TOKEN           Notion integration token (recommended)
   OPENAPI_MCP_HEADERS    JSON string with Notion API headers (alternative)
   AUTH_TOKEN             Bearer token for HTTP transport authentication (alternative to --auth-token)
+  MCP_TRACE_ENABLED      Enable tracing: 'true' or '1' (optional)
+  MCP_TRACE_LOG_FIELDS   JSON string with log field configuration (optional)
 
 Examples:
   notion-mcp-server                                    # Use stdio transport (default)
@@ -53,22 +84,27 @@ Examples:
   notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
+  notion-mcp-server --trace                            # Enable tracing with console adapter
   AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
+  MCP_TRACE_ENABLED=true notion-mcp-server             # Enable tracing via environment variable
 `);
         process.exit(0);
       }
       // Ignore unrecognized arguments (like command name passed by Docker)
     }
 
-    return { transport: transport.toLowerCase(), port, authToken };
+    return { transport: transport.toLowerCase(), port, authToken, traceEnabled };
   }
 
   const options = parseArgs()
   const transport = options.transport
 
+  // Create trace options (from CLI args or env vars)
+  const traceOptions = createTraceOptions(options.traceEnabled)
+
   if (transport === 'stdio') {
     // Use stdio transport (default)
-    const proxy = await initProxy(specPath, baseUrl)
+    const proxy = await initProxy(specPath, baseUrl, traceOptions)
     await proxy.connect(new StdioServerTransport())
     return proxy.getServer()
   } else if (transport === 'http') {
@@ -158,7 +194,7 @@ Examples:
             }
           }
 
-          const proxy = await initProxy(specPath, baseUrl)
+          const proxy = await initProxy(specPath, baseUrl, traceOptions)
           await proxy.connect(transport)
         } else {
           // Invalid request
@@ -197,7 +233,7 @@ Examples:
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
+
       const transport = transports[sessionId]
       await transport.handleRequest(req, res)
     })
@@ -209,7 +245,7 @@ Examples:
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
+
       const transport = transports[sessionId]
       await transport.handleRequest(req, res)
     })
@@ -226,7 +262,7 @@ Examples:
     })
 
     // Return a dummy server for compatibility
-    return { close: () => {} }
+    return { close: () => { } }
   } else {
     throw new Error(`Unsupported transport: ${transport}. Use 'stdio' or 'http'.`)
   }
