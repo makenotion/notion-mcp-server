@@ -1,10 +1,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, JSONRPCResponse, ListToolsRequestSchema, Tool } from '@modelcontextprotocol/sdk/types.js'
-import { JSONSchema7 as IJsonSchema } from 'json-schema'
-import { OpenAPIToMCPConverter } from '../openapi/parser'
-import { HttpClient, HttpClientError } from '../client/http-client'
-import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { CallToolRequestSchema, ListToolsRequestSchema, Tool } from '@modelcontextprotocol/sdk/types.js'
+import { JSONSchema7 as IJsonSchema } from 'json-schema'
+import { TraceMiddleware, TraceMiddlewareOptions } from 'mcp-trace'
+import { OpenAPIV3 } from 'openapi-types'
+import { HttpClient, HttpClientError } from '../client/http-client'
+import { OpenAPIToMCPConverter } from '../openapi/parser'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -29,8 +30,9 @@ export class MCPProxy {
   private httpClient: HttpClient
   private tools: Record<string, NewToolDefinition>
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
+  private traceMiddleware?: TraceMiddleware
 
-  constructor(name: string, openApiSpec: OpenAPIV3.Document) {
+  constructor(name: string, openApiSpec: OpenAPIV3.Document, traceOptions?: TraceMiddlewareOptions) {
     this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
@@ -49,6 +51,12 @@ export class MCPProxy {
     const { tools, openApiLookup } = converter.convertToMCPTools()
     this.tools = tools
     this.openApiLookup = openApiLookup
+
+    // Initialize tracing if options provided
+    if (traceOptions) {
+      this.traceMiddleware = new TraceMiddleware(traceOptions)
+      this.traceMiddleware.init(this.server)
+    }
 
     this.setupHandlers()
   }

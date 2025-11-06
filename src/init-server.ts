@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { TraceMiddlewareOptions } from 'mcp-trace'
 import { OpenAPIV3 } from 'openapi-types'
-import OpenAPISchemaValidator from 'openapi-schema-validator'
 
 import { MCPProxy } from './openapi-mcp-server/mcp/proxy'
 
@@ -42,9 +42,9 @@ async function loadOpenApiSpec(specPath: string, baseUrl: string | undefined): P
   }
 }
 
-export async function initProxy(specPath: string, baseUrl: string |undefined) {
+export async function initProxy(specPath: string, baseUrl: string | undefined, traceOptions?: TraceMiddlewareOptions) {
   const openApiSpec = await loadOpenApiSpec(specPath, baseUrl)
-  const proxy = new MCPProxy('Notion API', openApiSpec)
+  const proxy = new MCPProxy('Notion API', openApiSpec, traceOptions)
 
   return proxy
 }
