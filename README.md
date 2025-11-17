@@ -111,7 +111,9 @@ Use the remote Notion MCP server with OAuth authentication:
 claude mcp add --transport http notion https://mcp.notion.com/mcp
 ```
 
-This approach requires no configuration files and uses OAuth for authentication. See [Notion MCP documentation](https://developers.notion.com/docs/mcp) for details.
+This approach requires no configuration files and uses OAuth for authentication. Learn more:
+- [Notion MCP documentation](https://developers.notion.com/docs/mcp)
+- [Claude Code MCP guide](https://code.claude.com/docs/en/mcp#:~:text=Notion)
 
 *Option 2: Self-hosted (For local control)*
 
