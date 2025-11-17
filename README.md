@@ -99,6 +99,53 @@ Add the following to your `settings.json`
 }
 ```
 
+**Claude Code CLI**
+
+Claude Code supports both hosted and self-hosted configurations:
+
+*Option 1: Hosted (Recommended for ease of use)*
+
+Use the remote Notion MCP server with OAuth authentication:
+
+```bash
+claude mcp add --transport http notion https://mcp.notion.com/mcp
+```
+
+This approach requires no configuration files and uses OAuth for authentication. See [Notion MCP documentation](https://developers.notion.com/docs/mcp) for details.
+
+*Option 2: Self-hosted (For local control)*
+
+Create or edit `~/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+Enable the server in `~/.claude/settings.json`:
+
+```json
+{
+  "enabledMcpjsonServers": ["notionApi"]
+}
+```
+
+> **🔒 Security Note:** For production, avoid hardcoding tokens. Recommended options:
+> - Environment variable expansion: `"NOTION_TOKEN": "${NOTION_TOKEN}"`
+> - macOS Keychain wrapper script
+> - 1Password Service Accounts
+> - Cloud secret managers (AWS Secrets Manager, Doppler, etc.)
+
 ##### Using Docker:
 
 There are two options for running the MCP server with Docker:
