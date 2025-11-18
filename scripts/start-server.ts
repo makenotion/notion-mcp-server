@@ -45,6 +45,7 @@ Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
   --auth-token <token>   Bearer token for HTTP transport authentication (optional)
+  --ignore-tools <list>  Comma-separated list of tool names to ignore
   --help, -h             Show this help message
 
 Environment Variables:
@@ -57,6 +58,7 @@ Examples:
   notion-mcp-server --transport stdio                  # Use stdio transport explicitly
   notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
+  notion-mcp-server --ignore-tools API-create-a-database,API-retrieve-a-databas  # Ignore specified tools
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
   AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
 `);
