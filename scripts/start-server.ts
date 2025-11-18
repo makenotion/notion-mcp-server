@@ -21,6 +21,7 @@ export async function startServer(args: string[] = process.argv) {
     let transport = 'stdio'; // default
     let port = 3000;
     let authToken: string | undefined;
+    let ignoredTools: string[] = [];
 
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--transport' && i + 1 < args.length) {
@@ -32,6 +33,10 @@ export async function startServer(args: string[] = process.argv) {
       } else if (args[i] === '--auth-token' && i + 1 < args.length) {
         authToken = args[i + 1];
         i++; // skip next argument
+      } else if (args[i] === '--ignore-tools' && i + 1 < args.length) {
+        // Split comma-separated list and trim whitespace
+        ignoredTools = args[i + 1].split(',').map(t => t.trim());
+        i++;
       } else if (args[i] === '--help' || args[i] === '-h') {
         console.log(`
 Usage: notion-mcp-server [options]
@@ -60,7 +65,7 @@ Examples:
       // Ignore unrecognized arguments (like command name passed by Docker)
     }
 
-    return { transport: transport.toLowerCase(), port, authToken };
+    return { transport: transport.toLowerCase(), port, authToken, ignoredTools };
   }
 
   const options = parseArgs()
@@ -68,7 +73,7 @@ Examples:
 
   if (transport === 'stdio') {
     // Use stdio transport (default)
-    const proxy = await initProxy(specPath, baseUrl)
+    const proxy = await initProxy(specPath, baseUrl, options.ignoredTools)
     await proxy.connect(new StdioServerTransport())
     return proxy.getServer()
   } else if (transport === 'http') {
@@ -158,7 +163,7 @@ Examples:
             }
           }
 
-          const proxy = await initProxy(specPath, baseUrl)
+          const proxy = await initProxy(specPath, baseUrl, options.ignoredTools)
           await proxy.connect(transport)
         } else {
           // Invalid request
