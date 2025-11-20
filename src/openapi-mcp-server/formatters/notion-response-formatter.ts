@@ -25,6 +25,10 @@ export class NotionResponseFormatter {
       return this.formatBlocksResponse(responseData)
     }
 
+    if (this.isPropertyEndpoint(operationId, path)) {
+      return this.formatPropertyResponse(responseData)
+    }
+
     if (this.isPageEndpoint(operationId, path)) {
       return this.formatPageResponse(responseData)
     }
@@ -80,6 +84,10 @@ export class NotionResponseFormatter {
 
   private isCommentEndpoint(operationId: string, path: string): boolean {
     return operationId?.includes('comment') || path?.includes('/comments')
+  }
+
+  private isPropertyEndpoint(operationId: string, path: string): boolean {
+    return operationId?.includes('property') || path?.includes('/properties')
   }
 
   private formatBlocksResponse(data: any): string {
@@ -226,6 +234,11 @@ export class NotionResponseFormatter {
 
   private formatDatabaseResponse(data: any): string {
     if (data.object === 'list' && data.results) {
+      const pages = data.results.filter((r: any) => r.object === 'page')
+      if (pages.length > 0) {
+        return this.formatPagesList(pages, data.has_more, data.next_cursor)
+      }
+
       const databases = data.results.filter((r: any) => r.object === 'database')
       if (databases.length > 0) {
         return this.formatDatabasesList(databases, data.has_more, data.next_cursor)
@@ -411,6 +424,104 @@ By: [user:${comment.created_by.id}]`
     }
 
     return parts.join('\n')
+  }
+
+  private formatPropertyResponse(data: any): string {
+    if (data.object === 'property_item') {
+      return this.formatSinglePropertyItem(data)
+    }
+
+    if (data.object === 'list' && data.results) {
+      const propertyItems = data.results.filter((r: any) => r.object === 'property_item')
+      if (propertyItems.length > 0) {
+        return this.formatPropertyItemsList(propertyItems, data.has_more, data.next_cursor)
+      }
+    }
+
+    return this.formatFallback(data)
+  }
+
+  private formatSinglePropertyItem(item: any): string {
+    const value = this.formatPropertyItemValue(item)
+    return value || '[Empty property]'
+  }
+
+  private formatPropertyItemsList(items: any[], hasMore: boolean, nextCursor: string | null): string {
+    const parts: string[] = [`Found ${items.length} property item(s):\n`]
+
+    for (const item of items) {
+      const value = this.formatPropertyItemValue(item)
+      if (value) {
+        parts.push(`- ${value}`)
+      }
+    }
+
+    if (hasMore && nextCursor) {
+      parts.push(`\n[More results available, cursor: ${nextCursor}]`)
+    }
+
+    return parts.join('\n')
+  }
+
+  private formatPropertyItemValue(item: any): string {
+    if (!item || !item.type) return ''
+
+    switch (item.type) {
+      case 'title':
+      case 'rich_text':
+        const richText = item[item.type] as RichText
+        return this.markdownConverter.convertRichTextToMarkdown([richText])
+
+      case 'number':
+        return item.number?.toString() || ''
+
+      case 'select':
+        return item.select?.name || ''
+
+      case 'multi_select':
+        return item.multi_select?.name || ''
+
+      case 'date':
+        if (item.date?.start) {
+          return item.date.end ? `${item.date.start} → ${item.date.end}` : item.date.start
+        }
+        return ''
+
+      case 'people':
+        return item.people?.name || item.people?.id || ''
+
+      case 'files':
+        return item.files?.name || 'File'
+
+      case 'checkbox':
+        return item.checkbox ? '✓' : '✗'
+
+      case 'url':
+        return item.url || ''
+
+      case 'email':
+        return item.email || ''
+
+      case 'phone_number':
+        return item.phone_number || ''
+
+      case 'status':
+        return item.status?.name || ''
+
+      case 'relation':
+        return item.relation?.id ? `[page:${item.relation.id}]` : ''
+
+      case 'rollup':
+        if (item.rollup?.type === 'number') {
+          return item.rollup.number?.toString() || ''
+        } else if (item.rollup?.type === 'array') {
+          return `[${item.rollup.array?.length || 0} items]`
+        }
+        return `[${item.rollup?.type || 'rollup'}]`
+
+      default:
+        return `[${item.type}]`
+    }
   }
 
   private formatFallback(data: any): string {
