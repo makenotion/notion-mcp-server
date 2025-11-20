@@ -5,6 +5,7 @@ import { OpenAPIToMCPConverter } from '../openapi/parser'
 import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { NotionResponseFormatter } from '../formatters'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -29,6 +30,7 @@ export class MCPProxy {
   private httpClient: HttpClient
   private tools: Record<string, NewToolDefinition>
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
+  private responseFormatter: NotionResponseFormatter
 
   constructor(name: string, openApiSpec: OpenAPIV3.Document) {
     this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
@@ -49,6 +51,9 @@ export class MCPProxy {
     const { tools, openApiLookup } = converter.convertToMCPTools()
     this.tools = tools
     this.openApiLookup = openApiLookup
+
+    // Initialize response formatter
+    this.responseFormatter = new NotionResponseFormatter()
 
     this.setupHandlers()
   }
@@ -88,12 +93,20 @@ export class MCPProxy {
         // Execute the operation
         const response = await this.httpClient.executeOperation(operation, params)
 
+        // Format the response data
+        const formattedText = this.responseFormatter.formatResponse(
+          operation.operationId || '',
+          operation.method,
+          operation.path,
+          response.data
+        )
+
         // Convert response to MCP format
         return {
           content: [
             {
-              type: 'text', // currently this is the only type that seems to be used by mcp server
-              text: JSON.stringify(response.data), // TODO: pass through the http status code text?
+              type: 'text',
+              text: formattedText,
             },
           ],
         }

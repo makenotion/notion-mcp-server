@@ -1,19 +1,78 @@
 # Notion MCP Server
 
-> [!NOTE] 
-> 
-> We’ve introduced **Notion MCP**, a remote MCP server with the following improvements:
-> - Easy installation via standard OAuth. No need to fiddle with JSON or API token anymore.
-> - Powerful tools tailored to AI agents. These tools are designed with optimized token consumption in mind.
-> 
-> Learn more and try it out [here](https://developers.notion.com/docs/mcp)
 
+**This is a fork of the [official Notion MCP Server](https://github.com/makenotion/notion-mcp-server) by [@njbrake](https://github.com/njbrake), which returns content optimized for LLM consumption**
+This fork improves the original MCP server by returning **LLM-optimized output** instead of raw JSON:
+- Page and block content returned as clean, readable markdown
+- Block, page, and database IDs included as `[block:id]`, `[page:id]`, `[db:id]` for easy reference
+- Different response formats for different endpoints (pages, databases, search results, users)
+- Human-readable output significantly reduces LLM context consumption
+- Links and mentions formatted with proper ID tags for follow-up operations
+
+---
 
 ![notion-mcp-sm](https://github.com/user-attachments/assets/6c07003c-8455-4636-b298-d60ffdf46cd8)
 
-This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro). 
+This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro).
 
 ![mcp-demo](https://github.com/user-attachments/assets/e3ff90a7-7801-48a9-b807-f7dd47f0d3d6)
+
+## Output Format Examples
+
+This MCP server converts raw Notion API responses into LLM-friendly formats:
+
+### Page Content
+**Original MCP Server** (raw JSON):
+```json
+{"object":"page","id":"abc123","properties":{"title":{"type":"title","title":[{"type":"text","text":{"content":"Project Plan"}...}]}}...}
+```
+
+**Ours** (formatted markdown):
+```markdown
+# Project Plan [page:abc123]
+Icon: 📋
+
+**Properties:**
+- Status: In Progress
+- Assignee: John Doe
+- Due date: 2024-12-31
+
+URL: https://notion.so/abc123
+Created: 1/1/2024, 10:00:00 AM
+Last edited: 1/15/2024, 3:30:00 PM
+```
+
+### Block Content
+**Original**: Nested JSON objects with rich_text arrays
+
+**Ours**:
+```markdown
+# Project Overview [block:def456]
+
+This is the main project description with **bold text** and *italics*.
+
+## Tasks [block:ghi789]
+- [ ] Complete design phase [block:jkl012]
+- [x] Initial research [block:mno345]
+
+See the [requirements document](page:pqr678) for more details.
+```
+
+### Database Query Results
+**Original**: Complex JSON with nested property schemas
+
+**Ours**:
+```markdown
+Database: Project Tasks [db:xyz789]
+
+**Properties:**
+- **Name** (title)
+- **Status** (select: Not started, In progress, Done)
+- **Assignee** (people)
+- **Due date** (date)
+
+Found 15 pages
+```
 
 ### Installation
 
@@ -22,7 +81,7 @@ Go to [https://www.notion.so/profile/integrations](https://www.notion.so/profile
 
 ![Creating a Notion Integration token](docs/images/integrations-creation.png)
 
-While we limit the scope of Notion API's exposed (for example, you will not be able to delete databases via MCP), there is a non-zero risk to workspace data by exposing it to LLMs. Security-conscious users may want to further configure the Integration's _Capabilities_. 
+While we limit the scope of Notion API's exposed (for example, you will not be able to delete databases via MCP), there is a non-zero risk to workspace data by exposing it to LLMs. Security-conscious users may want to further configure the Integration's _Capabilities_.
 
 For example, you can create a read-only integration token by giving only "Read content" access from the "Configuration" tab:
 
@@ -36,7 +95,7 @@ To do this, visit the **Access** tab in your internal integration settings. Edit
 
 ![Edit integration access](docs/images/page-access-edit.png)
 
-Alternatively, you can grant page access individually. You'll need to visit the target page, and click on the 3 dots, and select "Connect to integration". 
+Alternatively, you can grant page access individually. You'll need to visit the target page, and click on the 3 dots, and select "Connect to integration".
 
 ![Adding Integration Token to Notion Connections](docs/images/connections.png)
 
