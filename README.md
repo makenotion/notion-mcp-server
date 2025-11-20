@@ -103,7 +103,7 @@ Add the following to your `settings.json`
 
 There are two options for running the MCP server with Docker:
 
-###### Option 1: Using the official Docker Hub image:
+###### Option 1: Using GitHub Container Registry:
 
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
 
@@ -118,7 +118,7 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
         "--rm",
         "-i",
         "-e", "NOTION_TOKEN",
-        "mcp/notion"
+        "ghcr.io/njbrake/notion-mcp-server:latest"
       ],
       "env": {
         "NOTION_TOKEN": "ntn_****"
@@ -139,7 +139,7 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
         "--rm",
         "-i",
         "-e", "OPENAPI_MCP_HEADERS",
-        "mcp/notion"
+        "ghcr.io/njbrake/notion-mcp-server:latest"
       ],
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ntn_****\",\"Notion-Version\":\"2022-06-28\"}"
@@ -150,7 +150,8 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json`:
 ```
 
 This approach:
-- Uses the official Docker Hub image
+- Uses the GitHub Container Registry image
+- Multi-platform support (linux/amd64 and linux/arm64)
 - Properly handles JSON escaping via environment variables
 - Provides a more reliable configuration method
 
