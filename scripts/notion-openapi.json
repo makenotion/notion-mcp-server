@@ -32,7 +32,7 @@
     "/v1/users/{user_id}": {
       "get": {
         "summary": "Retrieve a user",
-        "description": "Returns information about a user by their ID, including name, avatar, and type (person or bot).",
+        "description": "Returns information about a user by their ID, including name, avatar, and type (person or bot). Authentication is pre-configured. Useful for looking up user details after finding user IDs in page properties (created_by, last_edited_by, people properties) or comment authors. For person users, includes email if available. Use 'get-users' to list all workspace users if you don't have a specific ID.",
         "operationId": "get-user",
         "parameters": [
           {
@@ -82,12 +82,13 @@
     "/v1/users": {
       "get": {
         "summary": "List all users",
+        "description": "Returns a paginated list of all users in the workspace, including both person users and bot integrations. Authentication is pre-configured. Useful for finding user IDs to filter database queries by person properties or to identify comment authors. Supports pagination via start_cursor.",
         "operationId": "get-users",
         "parameters": [
           {
             "name": "start_cursor",
             "in": "query",
-            "description": "If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.",
+            "description": "A cursor returned in a previous response's next_cursor field. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of results. Omit this parameter for the first request.",
             "schema": {
               "type": "string"
             }
@@ -95,7 +96,7 @@
           {
             "name": "page_size",
             "in": "query",
-            "description": "The number of items from the full list desired in the response. Maximum: 100",
+            "description": "The number of items to return per page. Maximum: 100 (default: 100). For large result sets, make multiple requests using start_cursor to paginate through all results.",
             "schema": {
               "type": "integer",
               "default": 100
@@ -126,7 +127,7 @@
     "/v1/users/me": {
       "get": {
         "summary": "Retrieve your token's bot user",
-        "description": "Returns information about the bot user associated with the current authentication token, including owner information.",
+        "description": "Returns information about the bot user for this MCP server connection, including owner information. Authentication is already configured - you do not need to provide tokens or credentials.",
         "operationId": "get-self",
         "parameters": [],
         "responses": {
@@ -217,7 +218,7 @@
     "/v1/databases/{database_id}/query": {
       "post": {
         "summary": "Query a database",
-        "description": "Returns pages from a database with optional filtering and sorting. Does not return the database schema itself (use 'retrieve-a-database' for that). Supports pagination for large result sets.",
+        "description": "Returns pages (rows) from a database, optionally filtered and sorted. Authentication is pre-configured. Does not return the database schema - call 'retrieve-a-database' first to see available properties, their types, and select options. Filter and sort parameters reference property names from that schema. Filtering supports different operators per property type: text properties (equals, contains, starts_with), select/status (equals), numbers (equals, greater_than, less_than), dates (before, after), checkbox (equals true/false). Use 'and' or 'or' arrays to combine up to 100 filter conditions. Results are pages with their property values - use 'get-block-children' on returned [page:id] references to see the actual page content. Supports pagination via start_cursor for databases with many pages (max 100 per request). Use filter_properties query parameter to limit which page properties are returned if you only need specific fields.",
         "operationId": "post-database-query",
         "parameters": [
           {
@@ -820,11 +821,11 @@
                   },
                   "start_cursor": {
                     "type": "string",
-                    "description": "When supplied, returns a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results."
+                    "description": "A cursor returned in a previous response's next_cursor field. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of results. Omit this parameter for the first request."
                   },
                   "page_size": {
                     "type": "integer",
-                    "description": "The number of items from the full list desired in the response. Maximum: 100",
+                    "description": "The number of items to return per page. Maximum: 100 (default: 100). For large result sets, make multiple requests using start_cursor to paginate through all results.",
                     "default": 100
                   },
                   "archived": {
@@ -846,7 +847,7 @@
     "/v1/search": {
       "post": {
         "summary": "Search by title",
-        "description": "Searches across the workspace for pages and databases by title. Can filter results to only pages or only databases using the filter parameter. Returns matching pages and databases ordered by relevance or last edited time.",
+        "description": "Searches across the workspace for pages and databases by title - typically the first step when finding content by name. Authentication is pre-configured. Results include [page:id] or [db:id] references which you should use with 'retrieve-a-page', 'retrieve-a-database', or 'get-block-children' to access the actual content or metadata. Can filter results to only pages or only databases using filter.property='object' and filter.value='page'|'database'. Results ordered by relevance or last_edited_time (configurable via sort parameter). Supports pagination via start_cursor for workspaces with many results.",
         "operationId": "post-search",
         "parameters": [],
         "requestBody": {
@@ -889,11 +890,11 @@
                   },
                   "start_cursor": {
                     "type": "string",
-                    "description": "A `cursor` value returned in a previous response that If supplied, limits the response to results starting after the `cursor`. If not supplied, then the first page of results is returned. Refer to [pagination](https://developers.notion.com/reference/intro#pagination) for more details."
+                    "description": "A cursor returned in a previous response's next_cursor field. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of results. Omit this parameter for the first request."
                   },
                   "page_size": {
                     "type": "integer",
-                    "description": "The number of items from the full list to include in the response. Maximum: `100`.",
+                    "description": "The number of items to return per page. Maximum: 100 (default: 100). For large result sets, make multiple requests using start_cursor to paginate through all results.",
                     "default": 100,
                     "format": "int32"
                   }
@@ -910,7 +911,7 @@
     "/v1/blocks/{block_id}/children": {
       "get": {
         "summary": "Retrieve block children",
-        "description": "Returns the child blocks of a parent block. The block_id parameter accepts both block IDs and page IDs. To retrieve the content of a page, pass the page_id as the block_id parameter. Returns blocks formatted as markdown with inline [block:id] tags.",
+        "description": "Returns the child blocks (actual content) of a parent block or page. This is how you retrieve the text, images, lists, and other content from a page - 'retrieve-a-page' only returns metadata. Authentication is pre-configured. The block_id parameter accepts both block IDs and page IDs, so to get a page's content, pass the page_id here. Returns blocks formatted as readable markdown with inline [block:id] tags you can reference in 'update-a-block', 'delete-a-block', or 'patch-block-children'. Nested blocks are shown with proper hierarchy. For pages with many blocks, supports pagination via start_cursor when has_more is true - use the returned next_cursor to fetch remaining content.",
         "operationId": "get-block-children",
         "parameters": [
           {
@@ -925,7 +926,7 @@
           {
             "name": "start_cursor",
             "in": "query",
-            "description": "If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.",
+            "description": "A cursor returned in a previous response's next_cursor field. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of results. Omit this parameter for the first request.",
             "schema": {
               "type": "string"
             }
@@ -933,7 +934,7 @@
           {
             "name": "page_size",
             "in": "query",
-            "description": "The number of items from the full list desired in the response. Maximum: 100",
+            "description": "The number of items to return per page. Maximum: 100 (default: 100). For large result sets, make multiple requests using start_cursor to paginate through all results.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -947,7 +948,7 @@
       },
       "patch": {
         "summary": "Append block children",
-        "description": "Appends content blocks to a parent block or page. The block_id parameter accepts both block IDs and page IDs. Use this to add new content to existing pages or blocks.",
+        "description": "Appends new content blocks to the end of a parent block or page. Authentication is pre-configured. The block_id parameter accepts both block IDs and page IDs, so you can add content to a page by passing its page_id. The children parameter is an array of block objects to append. New blocks are added after any existing content. Returns the updated block with the new children. Use 'update-a-block' to modify existing block content instead of appending.",
         "operationId": "patch-block-children",
         "parameters": [
           {
@@ -1111,7 +1112,7 @@
     "/v1/blocks/{block_id}": {
       "get": {
         "summary": "Retrieve a block",
-        "description": "Returns a single block by ID with its properties and content. Does not include child blocks. To retrieve child blocks, use 'get-block-children' with the block_id.",
+        "description": "Returns a single block by ID with its properties and content. Authentication is pre-configured. Does not include child blocks - use 'get-block-children' to retrieve those. Useful for inspecting a specific block's properties after finding its [block:id] reference in 'get-block-children' output. For most use cases, 'get-block-children' provides better context by showing blocks with their hierarchy.",
         "operationId": "retrieve-a-block",
         "parameters": [
           {
@@ -1130,7 +1131,7 @@
       },
       "patch": {
         "summary": "Update a block",
-        "description": "Updates the content of a block. Currently only text content (for supported block types) and checked status (for to_do blocks) can be updated. Can also archive or restore blocks.",
+        "description": "Updates the content of an existing block. Authentication is pre-configured. Currently only text content (for supported block types like paragraph, heading, bulleted_list_item, etc.) and checked status (for to_do blocks) can be updated. Can also archive (delete) or restore blocks via the archived property. Use the [block:id] reference from 'get-block-children' output to identify which block to update. To append new blocks instead of modifying existing ones, use 'patch-block-children'.",
         "operationId": "update-a-block",
         "parameters": [
           {
@@ -1170,7 +1171,7 @@
       },
       "delete": {
         "summary": "Delete a block",
-        "description": "Deletes a block by setting it as archived. The block is not permanently removed but moved to trash.",
+        "description": "Deletes a block by setting it as archived (soft delete). Authentication is pre-configured. The block is not permanently removed but moved to trash, allowing recovery later. Use the [block:id] reference from 'get-block-children' output to identify which block to delete. To restore a deleted block, use 'update-a-block' with archived: false.",
         "operationId": "delete-a-block",
         "parameters": [
           {
@@ -1191,7 +1192,7 @@
     "/v1/pages/{page_id}": {
       "get": {
         "summary": "Retrieve a page",
-        "description": "Returns page metadata and properties (title, URL, dates, etc.). Does not return page content blocks. To retrieve the actual content of a page, use 'get-block-children' with the page_id as the block_id parameter.",
+        "description": "Returns page metadata and properties (title, URL, icon, cover, database property values, timestamps) but NOT the page's content/text. Authentication is pre-configured. This is useful for inspecting page properties without fetching the full content, or as a second step after 'post-search' to verify you have the right page before fetching content. To retrieve the actual content (headings, paragraphs, lists, etc.), follow up with 'get-block-children' using this page's ID. For database pages (pages in a database), property values are returned in Notion's structured format - you may need 'retrieve-a-page-property' for very large property values. Response includes [page:id] reference for use in other operations. Can optionally filter returned properties with filter_properties parameter.",
         "operationId": "retrieve-a-page",
         "parameters": [
           {
@@ -1218,7 +1219,7 @@
       },
       "patch": {
         "summary": "Update page properties",
-        "description": "Updates properties of a page such as title, icon, cover, or database property values. To update page content blocks, use 'patch-block-children' or 'update-a-block'.",
+        "description": "Updates properties of a page such as title, icon, cover, or database property values. Authentication is pre-configured. For database pages, only updates the property values - does not modify the database schema itself. To update the actual content/text on the page, use 'patch-block-children' (to append) or 'update-a-block' (to modify existing blocks). Can also archive (delete) or restore pages via the archived property. Use the [page:id] reference from search or other operations.",
         "operationId": "patch-page",
         "parameters": [
           {
@@ -1360,7 +1361,7 @@
     "/v1/pages": {
       "post": {
         "summary": "Create a page",
-        "description": "Creates a new page inside another page or inside a database. When creating a database page, properties must match the database schema. Can optionally include initial content via the children parameter.",
+        "description": "Creates a new page as a child of another page or as a row in a database. Authentication is pre-configured. The parent parameter specifies where to create: use {page_id: 'xxx'} for child pages or {database_id: 'xxx'} for database rows. For database pages, the properties must match the database schema - call 'retrieve-a-database' first to see required properties and their types. For standalone pages, typically only a title property is needed. Can optionally include initial content via the children parameter (array of block objects). Returns the newly created page with [page:id] reference. Icon and cover are optional.",
         "operationId": "post-page",
         "parameters": [],
         "requestBody": {
@@ -1453,7 +1454,7 @@
     "/v1/databases": {
       "post": {
         "summary": "Create a database",
-        "description": "Creates a new database as a child of an existing page. Define the property schema (columns) in the properties parameter. After creation, add pages to the database using 'post-page'.",
+        "description": "Creates a new database (table/collection) as a child of an existing page. Authentication is pre-configured. The parent parameter must specify a page_id. The properties parameter defines the database schema (columns) - each property needs a name and type (title, select, multi_select, date, number, checkbox, url, email, phone_number, relation, rollup, etc.). At least one title property is required. After creation, use 'post-page' with this database's ID to add rows/pages. The database inherits sharing permissions from the parent page. Returns the new database with [db:id] reference. Title, description, icon, and cover are optional.",
         "operationId": "create-a-database",
         "parameters": [],
         "requestBody": {
@@ -1583,7 +1584,7 @@
     "/v1/databases/{database_id}": {
       "patch": {
         "summary": "Update a database",
-        "description": "Updates database metadata including title, description, and property schema. Does not update pages within the database (use 'patch-page' for that).",
+        "description": "Updates database metadata including title, description, icon, and property schema (add, rename, or remove columns). Authentication is pre-configured. Does not update the pages/rows within the database - use 'patch-page' to update individual page property values. When modifying the schema, existing pages are updated to reflect the new structure. Use the [db:id] reference from search or other operations. Returns the updated database schema.",
         "operationId": "update-a-database",
         "parameters": [
           {
@@ -1714,7 +1715,7 @@
       },
       "get": {
         "summary": "Retrieve a database",
-        "description": "Returns database schema including title, description, and property definitions. Does not return pages within the database. To retrieve pages, use 'post-database-query'.",
+        "description": "Returns database schema (structure/column definitions) including database title, description, icon, and the property schema for all columns. Authentication is pre-configured. Each property includes its name, type (title, select, multi_select, date, number, relation, rollup, etc.), and type-specific configuration (e.g., select option names and colors, number format, relation target database). Does not return the actual pages/rows - use 'post-database-query' to retrieve those. The property names and types returned here are essential when: (1) creating new pages in this database via 'post-page' (properties must match schema), (2) constructing filters in 'post-database-query' (filter property names must match these), (3) understanding what data the database contains. Response includes [db:id] reference. This is typically called before querying or adding to a database.",
         "operationId": "retrieve-a-database",
         "parameters": [
           {
@@ -1748,7 +1749,7 @@
     "/v1/pages/{page_id}/properties/{property_id}": {
       "get": {
         "summary": "Retrieve a page property item",
-        "description": "Returns the value of a specific page property. Useful for paginated properties like long text or relation arrays that may not be fully included in the page object.",
+        "description": "Returns the value of a specific page property by property_id. Authentication is pre-configured. Use this when a property value is too large to be included in the page object returned by 'retrieve-a-page' (common for long rich text, large relation arrays, or rollup properties with many items). The property_id can be found in the page's properties object from 'retrieve-a-page'. Supports pagination via start_cursor for properties that return lists (relations, rollup arrays). Most simple properties (title, select, number, date, checkbox, etc.) are fully returned in 'retrieve-a-page' and don't require this separate call.",
         "operationId": "retrieve-a-page-property",
         "parameters": [
           {
@@ -1772,7 +1773,7 @@
           {
             "name": "page_size",
             "in": "query",
-            "description": "For paginated properties. The max number of property item objects on a page. The default size is 100",
+            "description": "The number of property items to return per page. Maximum: 100 (default: 100). Used when the property value is paginated (large relation arrays, rollup results, etc.). Make multiple requests using start_cursor to fetch all items.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1781,7 +1782,7 @@
           {
             "name": "start_cursor",
             "in": "query",
-            "description": "For paginated properties.",
+            "description": "A cursor returned in a previous response's next_cursor field. Used for paginated property values. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of property items.",
             "schema": {
               "type": "string"
             }
@@ -1814,7 +1815,7 @@
     "/v1/comments": {
       "get": {
         "summary": "Retrieve comments",
-        "description": "Retrieves a list of un-resolved [Comment objects](ref:comment-object) from a page or block.",
+        "description": "Retrieves a list of unresolved comments from a page or block. Authentication is pre-configured. The block_id parameter accepts both page IDs and block IDs - use a [page:id] reference to get comments on a page or [block:id] to get comments on a specific block. Only returns comments that haven't been resolved/marked as done. Returns comments with text, author, timestamps, and discussion thread IDs. Supports pagination via start_cursor for pages with many comments. Use 'create-a-comment' to add new comments or reply to existing discussion threads.",
         "operationId": "retrieve-a-comment",
         "parameters": [
           {
@@ -1829,7 +1830,7 @@
           {
             "name": "start_cursor",
             "in": "query",
-            "description": "If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.",
+            "description": "A cursor returned in a previous response's next_cursor field. When a response includes has_more: true and a next_cursor value, pass that cursor here to fetch the next page of results. Omit this parameter for the first request.",
             "schema": {
               "type": "string"
             }
@@ -1837,7 +1838,7 @@
           {
             "name": "page_size",
             "in": "query",
-            "description": "The number of items from the full list desired in the response. Maximum: 100",
+            "description": "The number of items to return per page. Maximum: 100 (default: 100). For large result sets, make multiple requests using start_cursor to paginate through all results.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1863,7 +1864,7 @@
       },
       "post": {
         "summary": "Create comment",
-        "description": "Creates a comment in a page or existing discussion thread.",
+        "description": "Creates a new comment on a page or adds a reply to an existing discussion thread. Authentication is pre-configured. The parent parameter specifies the page using page_id - use a [page:id] reference from search or other operations. The rich_text parameter is an array of rich text objects containing the comment text. To reply to an existing comment, include the discussion_id from that comment. New top-level comments start a new discussion thread. Returns the created comment with its ID and discussion thread information.",
         "operationId": "create-a-comment",
         "requestBody": {
           "content": {

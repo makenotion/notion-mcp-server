@@ -2,6 +2,8 @@ import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
 import type { JSONSchema7 as IJsonSchema } from 'json-schema'
 import type { ChatCompletionTool } from 'openai/resources/chat/completions'
 import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages'
+import type { ToolFilterConfig } from '../types/filter-config'
+import { shouldIncludeOperation } from '../types/filter-config'
 
 type NewToolMethod = {
   name: string
@@ -21,7 +23,10 @@ export class OpenAPIToMCPConverter {
   private schemaCache: Record<string, IJsonSchema> = {}
   private nameCounter: number = 0
 
-  constructor(private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document) {}
+  constructor(
+    private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document,
+    private filterConfig?: ToolFilterConfig
+  ) {}
 
   /**
    * Resolve a $ref reference to its schema in the openApiSpec.
@@ -180,6 +185,10 @@ export class OpenAPIToMCPConverter {
 
       for (const [method, operation] of Object.entries(pathItem)) {
         if (!this.isOperation(method, operation)) continue
+
+        if (operation.operationId && !shouldIncludeOperation(operation.operationId, path, this.filterConfig)) {
+          continue
+        }
 
         const mcpMethod = this.convertOperationToMCPMethod(operation, method, path)
         if (mcpMethod) {

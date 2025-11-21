@@ -347,6 +347,152 @@ curl -H "Authorization: Bearer your-token-here" \
 
 **Note:** Make sure to set either the `NOTION_TOKEN` environment variable (recommended) or the `OPENAPI_MCP_HEADERS` environment variable with your Notion integration token when using either transport mode.
 
+### Tool Filtering
+
+You can control which Notion API operations are available by setting environment variables to filter the tools exposed by the MCP server. This is useful for:
+- Limiting access to specific Notion API operations for security
+- Reducing the number of tools presented to the LLM
+- Creating specialized MCP server instances for different use cases
+
+#### Filter Configuration
+
+Three environment variables control tool filtering:
+
+**`NOTION_MCP_TOOLS_INCLUDE`** - Comma-separated list of operation IDs to include (allowlist mode)
+```bash
+# Only expose user and page retrieval operations
+NOTION_MCP_TOOLS_INCLUDE="get-user,get-users,retrieve-a-page"
+```
+
+**`NOTION_MCP_TOOLS_EXCLUDE`** - Comma-separated list of operation IDs to exclude (blocklist mode)
+```bash
+# Hide all delete operations
+NOTION_MCP_TOOLS_EXCLUDE="delete-a-block"
+```
+
+**`NOTION_MCP_RESOURCE_TYPES`** - Comma-separated list of resource types to expose (category-based filtering)
+```bash
+# Only expose pages and blocks operations
+NOTION_MCP_RESOURCE_TYPES="pages,blocks"
+
+# Available resource types: users, pages, blocks, databases, comments, search
+```
+
+#### Wildcard Patterns
+
+Both `NOTION_MCP_TOOLS_INCLUDE` and `NOTION_MCP_TOOLS_EXCLUDE` support wildcard patterns:
+- `*` matches any number of characters
+- `?` matches a single character
+
+```bash
+# Include all "get" operations
+NOTION_MCP_TOOLS_INCLUDE="get-*"
+
+# Exclude all delete and patch operations
+NOTION_MCP_TOOLS_EXCLUDE="delete-*,patch-*"
+
+# Include all operations related to pages
+NOTION_MCP_TOOLS_INCLUDE="*-page,*-pages"
+```
+
+#### Filter Combinations
+
+Filters are applied in this order:
+1. Resource types filter (if set)
+2. Include filter (if set)
+3. Exclude filter (if set)
+
+```bash
+# Only expose page operations, but exclude delete
+NOTION_MCP_RESOURCE_TYPES="pages"
+NOTION_MCP_TOOLS_EXCLUDE="delete-*"
+```
+
+#### Available Operation IDs
+
+All 19 Notion API operations that can be filtered:
+
+**Users:**
+- `get-user` - Retrieve a user
+- `get-users` - List all users
+- `get-self` - Retrieve bot information
+
+**Blocks:**
+- `retrieve-a-block` - Retrieve a block
+- `update-a-block` - Update a block
+- `delete-a-block` - Delete a block
+- `get-block-children` - Retrieve block children
+- `patch-block-children` - Append block children
+
+**Pages:**
+- `retrieve-a-page` - Retrieve a page
+- `patch-page` - Update page properties
+- `post-page` - Create a page
+- `retrieve-a-page-property` - Retrieve a page property item
+
+**Databases:**
+- `create-a-database` - Create a database
+- `update-a-database` - Update a database
+- `retrieve-a-database` - Retrieve a database
+- `post-database-query` - Query a database
+
+**Comments:**
+- `retrieve-a-comment` - Retrieve comments
+- `create-a-comment` - Create a comment
+
+**Search:**
+- `post-search` - Search by title
+
+#### Example Configurations
+
+**Read-only access:**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****",
+        "NOTION_MCP_TOOLS_INCLUDE": "get-*,retrieve-*,post-search,post-database-query"
+      }
+    }
+  }
+}
+```
+
+**Pages and blocks only:**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****",
+        "NOTION_MCP_RESOURCE_TYPES": "pages,blocks"
+      }
+    }
+  }
+}
+```
+
+**No destructive operations:**
+```javascript
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****",
+        "NOTION_MCP_TOOLS_EXCLUDE": "delete-*,update-*,patch-*,create-*,post-*"
+      }
+    }
+  }
+}
+```
+
 ### Examples
 
 1. Using the following instruction

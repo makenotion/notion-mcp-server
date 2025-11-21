@@ -6,6 +6,7 @@ import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { NotionResponseFormatter } from '../formatters'
+import type { ToolFilterConfig } from '../types/filter-config'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -46,13 +47,12 @@ export class MCPProxy {
       openApiSpec,
     )
 
-    // Convert OpenAPI spec to MCP tools
-    const converter = new OpenAPIToMCPConverter(openApiSpec)
+    const filterConfig = this.parseFilterConfigFromEnv()
+    const converter = new OpenAPIToMCPConverter(openApiSpec, filterConfig)
     const { tools, openApiLookup } = converter.convertToMCPTools()
     this.tools = tools
     this.openApiLookup = openApiLookup
 
-    // Initialize response formatter
     this.responseFormatter = new NotionResponseFormatter()
 
     this.setupHandlers()
@@ -136,8 +136,33 @@ export class MCPProxy {
     return this.openApiLookup[operationId] ?? null
   }
 
+  private parseFilterConfigFromEnv(): ToolFilterConfig | undefined {
+    const include = process.env.NOTION_MCP_TOOLS_INCLUDE
+    const exclude = process.env.NOTION_MCP_TOOLS_EXCLUDE
+    const resourceTypes = process.env.NOTION_MCP_RESOURCE_TYPES
+
+    if (!include && !exclude && !resourceTypes) {
+      return undefined
+    }
+
+    const config: ToolFilterConfig = {}
+
+    if (include) {
+      config.include = include.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    }
+
+    if (exclude) {
+      config.exclude = exclude.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    }
+
+    if (resourceTypes) {
+      config.resourceTypes = resourceTypes.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    }
+
+    return config
+  }
+
   private parseHeadersFromEnv(): Record<string, string> {
-    // First try OPENAPI_MCP_HEADERS (existing behavior)
     const headersJson = process.env.OPENAPI_MCP_HEADERS
     if (headersJson) {
       try {
@@ -145,17 +170,13 @@ export class MCPProxy {
         if (typeof headers !== 'object' || headers === null) {
           console.warn('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', typeof headers)
         } else if (Object.keys(headers).length > 0) {
-          // Only use OPENAPI_MCP_HEADERS if it contains actual headers
           return headers
         }
-        // If OPENAPI_MCP_HEADERS is empty object, fall through to try NOTION_TOKEN
       } catch (error) {
         console.warn('Failed to parse OPENAPI_MCP_HEADERS environment variable:', error)
-        // Fall through to try NOTION_TOKEN
       }
     }
 
-    // Alternative: try NOTION_TOKEN
     const notionToken = process.env.NOTION_TOKEN
     if (notionToken) {
       return {
