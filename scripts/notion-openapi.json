@@ -32,7 +32,7 @@
     "/v1/users/{user_id}": {
       "get": {
         "summary": "Retrieve a user",
-        "description": "",
+        "description": "Returns information about a user by their ID, including name, avatar, and type (person or bot).",
         "operationId": "get-user",
         "parameters": [
           {
@@ -126,7 +126,7 @@
     "/v1/users/me": {
       "get": {
         "summary": "Retrieve your token's bot user",
-        "description": "",
+        "description": "Returns information about the bot user associated with the current authentication token, including owner information.",
         "operationId": "get-self",
         "parameters": [],
         "responses": {
@@ -217,7 +217,7 @@
     "/v1/databases/{database_id}/query": {
       "post": {
         "summary": "Query a database",
-        "description": "",
+        "description": "Returns pages from a database with optional filtering and sorting. Does not return the database schema itself (use 'retrieve-a-database' for that). Supports pagination for large result sets.",
         "operationId": "post-database-query",
         "parameters": [
           {
@@ -846,7 +846,7 @@
     "/v1/search": {
       "post": {
         "summary": "Search by title",
-        "description": "",
+        "description": "Searches across the workspace for pages and databases by title. Can filter results to only pages or only databases using the filter parameter. Returns matching pages and databases ordered by relevance or last edited time.",
         "operationId": "post-search",
         "parameters": [],
         "requestBody": {
@@ -910,7 +910,7 @@
     "/v1/blocks/{block_id}/children": {
       "get": {
         "summary": "Retrieve block children",
-        "description": "",
+        "description": "Returns the child blocks of a parent block. The block_id parameter accepts both block IDs and page IDs. To retrieve the content of a page, pass the page_id as the block_id parameter. Returns blocks formatted as markdown with inline [block:id] tags.",
         "operationId": "get-block-children",
         "parameters": [
           {
@@ -947,7 +947,7 @@
       },
       "patch": {
         "summary": "Append block children",
-        "description": "",
+        "description": "Appends content blocks to a parent block or page. The block_id parameter accepts both block IDs and page IDs. Use this to add new content to existing pages or blocks.",
         "operationId": "patch-block-children",
         "parameters": [
           {
@@ -1111,7 +1111,7 @@
     "/v1/blocks/{block_id}": {
       "get": {
         "summary": "Retrieve a block",
-        "description": "",
+        "description": "Returns a single block by ID with its properties and content. Does not include child blocks. To retrieve child blocks, use 'get-block-children' with the block_id.",
         "operationId": "retrieve-a-block",
         "parameters": [
           {
@@ -1130,7 +1130,7 @@
       },
       "patch": {
         "summary": "Update a block",
-        "description": "",
+        "description": "Updates the content of a block. Currently only text content (for supported block types) and checked status (for to_do blocks) can be updated. Can also archive or restore blocks.",
         "operationId": "update-a-block",
         "parameters": [
           {
@@ -1170,7 +1170,7 @@
       },
       "delete": {
         "summary": "Delete a block",
-        "description": "",
+        "description": "Deletes a block by setting it as archived. The block is not permanently removed but moved to trash.",
         "operationId": "delete-a-block",
         "parameters": [
           {
@@ -1191,7 +1191,7 @@
     "/v1/pages/{page_id}": {
       "get": {
         "summary": "Retrieve a page",
-        "description": "",
+        "description": "Returns page metadata and properties (title, URL, dates, etc.). Does not return page content blocks. To retrieve the actual content of a page, use 'get-block-children' with the page_id as the block_id parameter.",
         "operationId": "retrieve-a-page",
         "parameters": [
           {
@@ -1218,7 +1218,7 @@
       },
       "patch": {
         "summary": "Update page properties",
-        "description": "",
+        "description": "Updates properties of a page such as title, icon, cover, or database property values. To update page content blocks, use 'patch-block-children' or 'update-a-block'.",
         "operationId": "patch-page",
         "parameters": [
           {
@@ -1360,7 +1360,7 @@
     "/v1/pages": {
       "post": {
         "summary": "Create a page",
-        "description": "",
+        "description": "Creates a new page inside another page or inside a database. When creating a database page, properties must match the database schema. Can optionally include initial content via the children parameter.",
         "operationId": "post-page",
         "parameters": [],
         "requestBody": {
@@ -1453,7 +1453,7 @@
     "/v1/databases": {
       "post": {
         "summary": "Create a database",
-        "description": "",
+        "description": "Creates a new database as a child of an existing page. Define the property schema (columns) in the properties parameter. After creation, add pages to the database using 'post-page'.",
         "operationId": "create-a-database",
         "parameters": [],
         "requestBody": {
@@ -1583,7 +1583,7 @@
     "/v1/databases/{database_id}": {
       "patch": {
         "summary": "Update a database",
-        "description": "",
+        "description": "Updates database metadata including title, description, and property schema. Does not update pages within the database (use 'patch-page' for that).",
         "operationId": "update-a-database",
         "parameters": [
           {
@@ -1714,7 +1714,7 @@
       },
       "get": {
         "summary": "Retrieve a database",
-        "description": "",
+        "description": "Returns database schema including title, description, and property definitions. Does not return pages within the database. To retrieve pages, use 'post-database-query'.",
         "operationId": "retrieve-a-database",
         "parameters": [
           {
@@ -1748,7 +1748,7 @@
     "/v1/pages/{page_id}/properties/{property_id}": {
       "get": {
         "summary": "Retrieve a page property item",
-        "description": "",
+        "description": "Returns the value of a specific page property. Useful for paginated properties like long text or relation arrays that may not be fully included in the page object.",
         "operationId": "retrieve-a-page-property",
         "parameters": [
           {
