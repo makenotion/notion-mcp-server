@@ -206,17 +206,6 @@ Don't forget to replace `ntn_****` with your integration secret. Find it from yo
 
 ![Copying your Integration token from the Configuration tab in the developer portal](https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a)
 
-
-#### Installing via Smithery
-
-[![smithery badge](https://smithery.ai/badge/@makenotion/notion-mcp-server)](https://smithery.ai/server/@makenotion/notion-mcp-server)
-
-To install Notion API Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@makenotion/notion-mcp-server):
-
-```bash
-npx -y @smithery/cli install @makenotion/notion-mcp-server --client claude
-```
-
 ### Transport Options
 
 The Notion MCP Server supports two transport modes:
