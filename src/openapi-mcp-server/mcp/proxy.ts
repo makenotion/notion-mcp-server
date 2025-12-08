@@ -124,7 +124,18 @@ export class MCPProxy {
   }
 
   private parseHeadersFromEnv(): Record<string, string> {
-    // First try OPENAPI_MCP_HEADERS (existing behavior)
+
+    // First try NOTION_TOKEN (recommended approach)
+    const notionToken = process.env.NOTION_TOKEN
+    if (notionToken) {
+      console.log('Using NOTION_TOKEN (recommended)');
+      return {
+        'Authorization': `Bearer ${notionToken}`,
+        'Notion-Version': '2022-06-28'
+      }
+    }
+
+    // Fallback to OPENAPI_MCP_HEADERS (for advanced use cases)
     const headersJson = process.env.OPENAPI_MCP_HEADERS
     if (headersJson) {
       try {
@@ -139,15 +150,6 @@ export class MCPProxy {
       } catch (error) {
         console.warn('Failed to parse OPENAPI_MCP_HEADERS environment variable:', error)
         // Fall through to try NOTION_TOKEN
-      }
-    }
-
-    // Alternative: try NOTION_TOKEN
-    const notionToken = process.env.NOTION_TOKEN
-    if (notionToken) {
-      return {
-        'Authorization': `Bearer ${notionToken}`,
-        'Notion-Version': '2022-06-28'
       }
     }
 
