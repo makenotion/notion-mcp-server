@@ -99,6 +99,17 @@ Add the following to your `settings.json`
 }
 ```
 
+**Codex**
+
+Add the following to your Codex MCP config (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.notion]
+command = "npx"
+args = ["-y", "@notionhq/notion-mcp-server"]
+env = { NOTION_TOKEN = "ntn_****" }
+```
+
 ##### Using Docker:
 
 There are two options for running the MCP server with Docker:
