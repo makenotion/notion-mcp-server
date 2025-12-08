@@ -29,9 +29,11 @@ export class MCPProxy {
   private httpClient: HttpClient
   private tools: Record<string, NewToolDefinition>
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
+  private ignoredTools: Set<string>
 
-  constructor(name: string, openApiSpec: OpenAPIV3.Document) {
+  constructor(name: string, openApiSpec: OpenAPIV3.Document, ignoredTools: string[] = []) {
     this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
+    this.ignoredTools = new Set(ignoredTools)
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
       throw new Error('No base URL found in OpenAPI spec')
@@ -63,6 +65,13 @@ export class MCPProxy {
         def.methods.forEach(method => {
           const toolNameWithMethod = `${toolName}-${method.name}`;
           const truncatedToolName = this.truncateToolName(toolNameWithMethod);
+
+
+          // Filter out tools if the full name OR the method name (operationId) is in the ignored list
+          if (this.ignoredTools.has(truncatedToolName) || this.ignoredTools.has(method.name)) {
+            return;
+          }
+
           tools.push({
             name: truncatedToolName,
             description: method.description,
@@ -77,6 +86,11 @@ export class MCPProxy {
     // Handle tool calling
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: params } = request.params
+
+      // Block execution if tool is ignored (sanity check)
+      if (this.ignoredTools.has(name)) {
+        throw new Error(`Tool "${name}" is disabled by configuration`)
+      }
 
       // Find the operation in OpenAPI spec
       const operation = this.findOperation(name)
