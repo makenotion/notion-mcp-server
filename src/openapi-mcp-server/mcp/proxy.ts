@@ -86,7 +86,7 @@ export class MCPProxy {
 
       // Fix for nested object parameters being serialized as strings
       // Parse any stringified JSON objects back to objects
-      const parsedParams = this.parseNestedObjectParameters(params || {}, operation)
+      const parsedParams = this.parseNestedObjectParameters(params || {}, name)
 
       try {
         // Execute the operation
@@ -134,10 +134,10 @@ export class MCPProxy {
    */
   private parseNestedObjectParameters(
     params: Record<string, any>,
-    operation: OpenAPIV3.OperationObject & { method: string; path: string }
+    toolName: string
   ): Record<string, any> {
     const parsed: Record<string, any> = {}
-    const inputSchema = this.getInputSchemaForOperation(operation)
+    const inputSchema = this.getInputSchemaForOperation(toolName)
 
     for (const [key, value] of Object.entries(params)) {
       if (value === null || value === undefined) {
@@ -239,16 +239,22 @@ export class MCPProxy {
   }
 
   /**
-   * Get the input schema for a given operation
+   * Get the input schema for a given operation by tool name
    */
   private getInputSchemaForOperation(
-    operation: OpenAPIV3.OperationObject & { method: string; path: string }
+    toolName: string
   ): IJsonSchema & { type: 'object' } | null {
     // Find the tool definition for this operation
-    for (const [toolName, toolDef] of Object.entries(this.tools)) {
-      const method = toolDef.methods.find(m => `${toolName}-${m.name}` === operation.operationId)
-      if (method) {
-        return method.inputSchema
+    // Tool names are in format "API-operationId" (e.g., "API-createPage")
+    for (const [apiName, toolDef] of Object.entries(this.tools)) {
+      // Extract the operationId from the full tool name
+      const prefix = `${apiName}-`
+      if (toolName.startsWith(prefix)) {
+        const operationId = toolName.slice(prefix.length)
+        const method = toolDef.methods.find(m => m.name === operationId)
+        if (method) {
+          return method.inputSchema
+        }
       }
     }
     return null
