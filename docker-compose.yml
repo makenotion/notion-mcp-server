@@ -4,3 +4,10 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
+    volumes:
+      # Mount source code for development
+      - ./src:/app/src:ro
+      - ./scripts:/app/scripts:ro
+      - ./package.json:/app/package.json:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+    working_dir: /app
