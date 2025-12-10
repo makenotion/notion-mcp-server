@@ -84,9 +84,13 @@ export class MCPProxy {
         throw new Error(`Method ${name} not found`)
       }
 
+      // Fix for nested object parameters being serialized as strings
+      // Parse any stringified JSON objects back to objects
+      const parsedParams = this.parseNestedObjectParameters(params || {}, operation)
+
       try {
         // Execute the operation
-        const response = await this.httpClient.executeOperation(operation, params)
+        const response = await this.httpClient.executeOperation(operation, parsedParams)
 
         // Convert response to MCP format
         return {
@@ -121,6 +125,133 @@ export class MCPProxy {
 
   private findOperation(operationId: string): (OpenAPIV3.OperationObject & { method: string; path: string }) | null {
     return this.openApiLookup[operationId] ?? null
+  }
+
+  /**
+   * Recursively parse stringified JSON objects in parameters.
+   * This fixes an issue where nested object parameters are received as strings
+   * instead of objects, causing validation errors.
+   */
+  private parseNestedObjectParameters(
+    params: Record<string, any>,
+    operation: OpenAPIV3.OperationObject & { method: string; path: string }
+  ): Record<string, any> {
+    const parsed: Record<string, any> = {}
+    const inputSchema = this.getInputSchemaForOperation(operation)
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value === null || value === undefined) {
+        parsed[key] = value
+        continue
+      }
+
+      // Get the expected schema for this parameter
+      const paramSchema = this.getSchemaProperty(inputSchema, key)
+
+      // If the schema expects an object but we received a string, try to parse it
+      if (paramSchema && typeof paramSchema === 'object' && paramSchema.type === 'object' && typeof value === 'string') {
+        try {
+          // Try to parse as JSON
+          const parsedValue = JSON.parse(value)
+          if (typeof parsedValue === 'object' && parsedValue !== null) {
+            // Recursively parse nested objects
+            parsed[key] = this.parseNestedObjectValue(parsedValue, paramSchema)
+          } else {
+            // If parsing didn't result in an object, keep original value
+            parsed[key] = value
+          }
+        } catch {
+          // If parsing fails, keep original value
+          parsed[key] = value
+        }
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        // Recursively parse nested objects
+        parsed[key] = this.parseNestedObjectValue(value, paramSchema)
+      } else {
+        parsed[key] = value
+      }
+    }
+
+    return parsed
+  }
+
+  /**
+   * Recursively parse nested object values based on schema
+   */
+  private parseNestedObjectValue(value: any, schema: IJsonSchema | undefined): any {
+    if (value === null || value === undefined) {
+      return value
+    }
+
+    if (typeof value === 'string') {
+      // If we have a string but schema expects object, try to parse
+      if (schema && typeof schema === 'object' && schema.type === 'object') {
+        try {
+          const parsed = JSON.parse(value)
+          if (typeof parsed === 'object' && parsed !== null) {
+            return this.parseNestedObjectValue(parsed, schema)
+          }
+        } catch {
+          // Parsing failed, return original
+        }
+      }
+      return value
+    }
+
+    if (Array.isArray(value)) {
+      const itemsSchema = schema && typeof schema === 'object' && 'items' in schema 
+        ? (schema.items as IJsonSchema | undefined)
+        : undefined
+      return value.map(item => this.parseNestedObjectValue(item, itemsSchema))
+    }
+
+    if (typeof value === 'object') {
+      const result: Record<string, any> = {}
+      const schemaObj = schema && typeof schema === 'object' && schema.type === 'object' 
+        ? (schema as IJsonSchema & { type: 'object' })
+        : null
+      for (const [key, val] of Object.entries(value)) {
+        const propSchema = this.getSchemaProperty(schemaObj, key)
+        result[key] = this.parseNestedObjectValue(val, propSchema)
+      }
+      return result
+    }
+
+    return value
+  }
+
+  /**
+   * Safely get a property from a JSON schema, handling the fact that
+   * JSONSchema7Definition can be false or a schema object
+   */
+  private getSchemaProperty(schema: IJsonSchema & { type: 'object' } | null, key: string): IJsonSchema | undefined {
+    if (!schema || !schema.properties) {
+      return undefined
+    }
+    const prop = schema.properties[key]
+    if (prop === false) {
+      return undefined
+    }
+    if (typeof prop === 'object') {
+      return prop as IJsonSchema
+    }
+    return undefined
+  }
+
+  /**
+   * Get the input schema for a given operation
+   */
+  private getInputSchemaForOperation(
+    operation: OpenAPIV3.OperationObject & { method: string; path: string }
+  ): IJsonSchema & { type: 'object' } | null {
+    // Find the tool definition for this operation
+    for (const [toolName, toolDef] of Object.entries(this.tools)) {
+      const method = toolDef.methods.find(m => `${toolName}-${m.name}` === operation.operationId)
+      if (method) {
+        return method.inputSchema
+      }
+    }
+    return null
   }
 
   private parseHeadersFromEnv(): Record<string, string> {
