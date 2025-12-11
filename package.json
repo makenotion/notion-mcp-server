@@ -19,6 +19,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.13.3",
     "axios": "^1.8.4",
+    "dotenv": "^17.2.1",
     "express": "^4.21.2",
     "form-data": "^4.0.1",
     "mustache": "^4.2.0",
