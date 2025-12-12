@@ -189,6 +189,124 @@ describe('MCPProxy', () => {
     })
   })
 
+  describe('coerceParamsToSchemaTypes', () => {
+    it('should coerce string to integer', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          page_size: { type: 'integer' as const }
+        }
+      }
+
+      const result = coerceParamsToSchemaTypes({ page_size: '20' }, schema)
+      expect(result.page_size).toBe(20)
+      expect(typeof result.page_size).toBe('number')
+    })
+
+    it('should coerce string to number', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          price: { type: 'number' as const }
+        }
+      }
+
+      const result = coerceParamsToSchemaTypes({ price: '19.99' }, schema)
+      expect(result.price).toBe(19.99)
+      expect(typeof result.price).toBe('number')
+    })
+
+    it('should coerce string to boolean', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          active: { type: 'boolean' as const }
+        }
+      }
+
+      expect(coerceParamsToSchemaTypes({ active: 'true' }, schema).active).toBe(true)
+      expect(coerceParamsToSchemaTypes({ active: 'false' }, schema).active).toBe(false)
+      expect(coerceParamsToSchemaTypes({ active: 'TRUE' }, schema).active).toBe(true)
+    })
+
+    it('should leave string values as-is', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          query: { type: 'string' as const }
+        }
+      }
+
+      const result = coerceParamsToSchemaTypes({ query: 'search term' }, schema)
+      expect(result.query).toBe('search term')
+    })
+
+    it('should handle missing schema properties gracefully', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {}
+      }
+
+      const result = coerceParamsToSchemaTypes({ unknown: '123' }, schema)
+      expect(result.unknown).toBe('123')
+    })
+
+    it('should handle undefined and null params', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          value: { type: 'integer' as const }
+        }
+      }
+
+      expect(coerceParamsToSchemaTypes(undefined, schema)).toEqual({})
+      expect(coerceParamsToSchemaTypes({ value: null }, schema).value).toBe(null)
+    })
+
+    it('should coerce array items', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          ids: {
+            type: 'array' as const,
+            items: { type: 'integer' as const }
+          }
+        }
+      }
+
+      const result = coerceParamsToSchemaTypes({ ids: ['1', '2', '3'] }, schema)
+      expect(result.ids).toEqual([1, 2, 3])
+    })
+
+    it('should not coerce invalid numeric strings', () => {
+      const coerceParamsToSchemaTypes = (proxy as any).coerceParamsToSchemaTypes.bind(proxy)
+
+      const schema = {
+        type: 'object' as const,
+        properties: {
+          value: { type: 'integer' as const }
+        }
+      }
+
+      const result = coerceParamsToSchemaTypes({ value: 'not-a-number' }, schema)
+      expect(result.value).toBe('not-a-number')
+    })
+  })
+
   describe('parseHeadersFromEnv', () => {
     const originalEnv = process.env
 

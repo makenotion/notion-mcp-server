@@ -14,13 +14,15 @@ type PathItemObject = OpenAPIV3.PathItemObject & {
   patch?: OpenAPIV3.OperationObject
 }
 
+type NewToolMethod = {
+  name: string
+  description: string
+  inputSchema: IJsonSchema & { type: 'object' }
+  returnSchema?: IJsonSchema
+}
+
 type NewToolDefinition = {
-  methods: Array<{
-    name: string
-    description: string
-    inputSchema: IJsonSchema & { type: 'object' }
-    returnSchema?: IJsonSchema
-  }>
+  methods: Array<NewToolMethod>
 }
 
 // import this class, extend and return server
@@ -28,6 +30,7 @@ export class MCPProxy {
   private server: Server
   private httpClient: HttpClient
   private tools: Record<string, NewToolDefinition>
+  private toolMethodLookup: Record<string, NewToolMethod>
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
 
   constructor(name: string, openApiSpec: OpenAPIV3.Document) {
@@ -49,6 +52,16 @@ export class MCPProxy {
     const { tools, openApiLookup } = converter.convertToMCPTools()
     this.tools = tools
     this.openApiLookup = openApiLookup
+
+    // Build a lookup for tool methods by their truncated name
+    this.toolMethodLookup = {}
+    Object.entries(this.tools).forEach(([toolName, def]) => {
+      def.methods.forEach(method => {
+        const toolNameWithMethod = `${toolName}-${method.name}`
+        const truncatedToolName = this.truncateToolName(toolNameWithMethod)
+        this.toolMethodLookup[truncatedToolName] = method
+      })
+    })
 
     this.setupHandlers()
   }
@@ -84,9 +97,17 @@ export class MCPProxy {
         throw new Error(`Method ${name} not found`)
       }
 
+      // Find the tool method to get the input schema
+      const toolMethod = this.toolMethodLookup[name]
+
+      // Coerce parameters to their expected types based on the schema
+      const coercedParams = toolMethod
+        ? this.coerceParamsToSchemaTypes(params, toolMethod.inputSchema)
+        : params
+
       try {
         // Execute the operation
-        const response = await this.httpClient.executeOperation(operation, params)
+        const response = await this.httpClient.executeOperation(operation, coercedParams)
 
         // Convert response to MCP format
         return {
@@ -152,6 +173,88 @@ export class MCPProxy {
     }
 
     return {}
+  }
+
+  /**
+   * Coerce parameter values to their expected types based on the JSON schema.
+   * This handles cases where MCP protocol sends all values as strings.
+   */
+  private coerceParamsToSchemaTypes(
+    params: Record<string, any> | undefined,
+    schema: IJsonSchema & { type: 'object' }
+  ): Record<string, any> {
+    if (!params || !schema.properties) {
+      return params ?? {}
+    }
+
+    const coerced: Record<string, any> = { ...params }
+
+    for (const [key, value] of Object.entries(coerced)) {
+      if (value === undefined || value === null) continue
+
+      const propSchema = schema.properties[key] as IJsonSchema | undefined
+      if (!propSchema) continue
+
+      coerced[key] = this.coerceValue(value, propSchema)
+    }
+
+    return coerced
+  }
+
+  /**
+   * Coerce a single value to its expected type based on the schema.
+   */
+  private coerceValue(value: any, schema: IJsonSchema): any {
+    // Handle $ref - we can't resolve it here, so just return the value as-is
+    if ('$ref' in schema) {
+      return value
+    }
+
+    const schemaType = schema.type
+
+    // Handle integer type
+    if (schemaType === 'integer') {
+      if (typeof value === 'string') {
+        const parsed = parseInt(value, 10)
+        return isNaN(parsed) ? value : parsed
+      }
+      return value
+    }
+
+    // Handle number type
+    if (schemaType === 'number') {
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value)
+        return isNaN(parsed) ? value : parsed
+      }
+      return value
+    }
+
+    // Handle boolean type
+    if (schemaType === 'boolean') {
+      if (typeof value === 'string') {
+        if (value.toLowerCase() === 'true') return true
+        if (value.toLowerCase() === 'false') return false
+      }
+      return value
+    }
+
+    // Handle array type
+    if (schemaType === 'array' && Array.isArray(value) && schema.items) {
+      return value.map(item => this.coerceValue(item, schema.items as IJsonSchema))
+    }
+
+    // Handle object type recursively
+    if (schemaType === 'object' && typeof value === 'object' && value !== null && schema.properties) {
+      const coerced: Record<string, any> = {}
+      for (const [k, v] of Object.entries(value)) {
+        const propSchema = schema.properties[k] as IJsonSchema | undefined
+        coerced[k] = propSchema ? this.coerceValue(v, propSchema) : v
+      }
+      return coerced
+    }
+
+    return value
   }
 
   private getContentType(headers: Headers): 'text' | 'image' | 'binary' {
