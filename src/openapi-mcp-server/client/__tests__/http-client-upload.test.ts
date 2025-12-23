@@ -81,8 +81,8 @@ describe('HttpClient File Upload', () => {
     const mockFormDataHeaders = { 'content-type': 'multipart/form-data; boundary=---123' }
 
     vi.mocked(fs.createReadStream).mockReturnValue(mockFileStream as any)
-    vi.mocked(FormData.prototype.append).mockImplementation(() => {})
-    vi.mocked(FormData.prototype.getHeaders).mockReturnValue(mockFormDataHeaders)
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(() => {})
+    vi.spyOn(FormData.prototype, 'getHeaders').mockReturnValue(mockFormDataHeaders)
 
     const uploadPath = mockOpenApiSpec.paths['/upload']
     if (!uploadPath?.post) {
@@ -135,8 +135,8 @@ describe('HttpClient File Upload', () => {
     vi.mocked(fs.createReadStream)
       .mockReturnValueOnce(mockFileStream1 as any)
       .mockReturnValueOnce(mockFileStream2 as any)
-    vi.mocked(FormData.prototype.append).mockImplementation(() => {})
-    vi.mocked(FormData.prototype.getHeaders).mockReturnValue(mockFormDataHeaders)
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(() => {})
+    vi.spyOn(FormData.prototype, 'getHeaders').mockReturnValue(mockFormDataHeaders)
 
     const operation: OpenAPIV3.OperationObject = {
       operationId: 'uploadFile',
