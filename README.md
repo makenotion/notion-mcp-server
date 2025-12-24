@@ -385,8 +385,28 @@ npm test
 npx -y --prefix /path/to/local/notion-mcp-server @notionhq/notion-mcp-server
 ```
 
+Testing changes locally in Cursor:
+
+1. Run `npm link` command from repository root to create a machine-global symlink to the `notion-mcp-server` package.
+2. Merge the configuration snippet below into Cursor's `mcp.json` (or other MCP client you want to test with).
+3. (Cleanup) run `npm unlink` from repository root.
+
+```json
+{
+  "mcpServers": {
+    "notion-local-package": {
+      "command": "notion-mcp-server",
+      "env": {
+        "NOTION_TOKEN": "ntn_..."
+      }
+    }
+  }
+}
+```
+
 #### Publish
 
 ```bash
+npm login
 npm publish --access public
 ```
