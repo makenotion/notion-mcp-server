@@ -185,7 +185,8 @@ export class OpenAPIToMCPConverter {
         if (mcpMethod) {
           const uniqueName = this.ensureUniqueName(mcpMethod.name)
           mcpMethod.name = uniqueName
-          mcpMethod.description = this.getDescription(operation.summary || operation.description || '')
+          // Apply description prefix to the already-built description (which includes error responses)
+          mcpMethod.description = this.getDescription(mcpMethod.description)
           tools[apiName]!.methods.push(mcpMethod)
           openApiLookup[apiName + '-' + uniqueName] = { ...operation, method, path }
           zip[apiName + '-' + uniqueName] = { openApi: { ...operation, method, path }, mcp: mcpMethod }
@@ -519,6 +520,10 @@ export class OpenAPIToMCPConverter {
   }
 
   private getDescription(description: string): string {
-    return "Notion | " + description
+    // Only add "Notion | " prefix for the Notion API
+    if (this.openApiSpec.info.title === 'Notion API') {
+      return "Notion | " + description
+    }
+    return description
   }
 }

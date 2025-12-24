@@ -231,7 +231,7 @@ describe('MCPProxy', () => {
     })
 
     it('should return empty object and warn on invalid JSON', () => {
-      const consoleSpy = vi.spyOn(console, 'warn')
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       process.env.OPENAPI_MCP_HEADERS = 'invalid json'
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
@@ -242,10 +242,11 @@ describe('MCPProxy', () => {
         expect.anything(),
       )
       expect(consoleSpy).toHaveBeenCalledWith('Failed to parse OPENAPI_MCP_HEADERS environment variable:', expect.any(Error))
+      consoleSpy.mockRestore()
     })
 
     it('should return empty object and warn on non-object JSON', () => {
-      const consoleSpy = vi.spyOn(console, 'warn')
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       process.env.OPENAPI_MCP_HEADERS = '"string"'
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
@@ -256,6 +257,7 @@ describe('MCPProxy', () => {
         expect.anything(),
       )
       expect(consoleSpy).toHaveBeenCalledWith('OPENAPI_MCP_HEADERS environment variable must be a JSON object, got:', 'string')
+      consoleSpy.mockRestore()
     })
 
     it('should use NOTION_TOKEN when OPENAPI_MCP_HEADERS is not set', () => {
@@ -267,7 +269,7 @@ describe('MCPProxy', () => {
         expect.objectContaining({
           headers: {
             'Authorization': 'Bearer ntn_test_token_123',
-            'Notion-Version': '2022-06-28'
+            'Notion-Version': '2025-09-03'
           },
         }),
         expect.anything(),
@@ -315,7 +317,7 @@ describe('MCPProxy', () => {
         expect.objectContaining({
           headers: {
             'Authorization': 'Bearer ntn_test_token_123',
-            'Notion-Version': '2022-06-28'
+            'Notion-Version': '2025-09-03'
           },
         }),
         expect.anything(),
