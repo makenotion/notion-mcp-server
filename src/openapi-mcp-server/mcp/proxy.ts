@@ -63,10 +63,22 @@ export class MCPProxy {
         def.methods.forEach(method => {
           const toolNameWithMethod = `${toolName}-${method.name}`;
           const truncatedToolName = this.truncateToolName(toolNameWithMethod);
+
+          // Look up the HTTP method to determine annotations
+          const operation = this.openApiLookup[toolNameWithMethod];
+          const httpMethod = operation?.method?.toLowerCase();
+          const isReadOnly = httpMethod === 'get';
+
           tools.push({
             name: truncatedToolName,
             description: method.description,
             inputSchema: method.inputSchema as Tool['inputSchema'],
+            annotations: {
+              title: this.operationIdToTitle(method.name),
+              ...(isReadOnly
+                ? { readOnlyHint: true }
+                : { destructiveHint: true }),
+            },
           })
         })
       })
@@ -171,6 +183,19 @@ export class MCPProxy {
       return name;
     }
     return name.slice(0, 64);
+  }
+
+  /**
+   * Convert an operationId like "createDatabase" to a human-readable title like "Create Database"
+   */
+  private operationIdToTitle(operationId: string): string {
+    // Split on camelCase boundaries and capitalize each word
+    return operationId
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .split(/[\s_-]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   async connect(transport: Transport) {
