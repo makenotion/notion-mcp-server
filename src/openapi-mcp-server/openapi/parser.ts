@@ -118,6 +118,11 @@ export class OpenAPIToMCPConverter {
       result.enum = schema.enum
     }
 
+    // Handle const values (important for oneOf discriminators)
+    if ('const' in schema && schema.const !== undefined) {
+      result.const = schema.const
+    }
+
     if (schema.default !== undefined) {
       result.default = schema.default
     }

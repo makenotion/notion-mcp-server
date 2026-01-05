@@ -848,6 +848,99 @@ describe('OpenAPIToMCPConverter', () => {
       description: 'A schema description',
     })
   })
+
+  it('preserves const values for oneOf discriminators', () => {
+    const spec: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/resource': {
+          post: {
+            operationId: 'createResource',
+            summary: 'Create a resource with discriminated union',
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['parent'],
+                    properties: {
+                      parent: {
+                        $ref: '#/components/schemas/ParentRequest',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': {
+                description: 'Success',
+                content: {
+                  'application/json': {
+                    schema: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          PageIdParent: {
+            type: 'object',
+            properties: {
+              page_id: { type: 'string', format: 'uuid' },
+            },
+            required: ['page_id'],
+          },
+          DatabaseIdParent: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', const: 'database_id' },
+              database_id: { type: 'string', format: 'uuid' },
+            },
+            required: ['database_id'],
+          },
+          ParentRequest: {
+            oneOf: [
+              { $ref: '#/components/schemas/PageIdParent' },
+              { $ref: '#/components/schemas/DatabaseIdParent' },
+              {
+                type: 'object',
+                properties: {
+                  type: { const: 'workspace' },
+                },
+                required: ['type'],
+              },
+            ],
+          },
+        },
+      },
+    }
+
+    const converter = new OpenAPIToMCPConverter(spec)
+    const { tools } = converter.convertToMCPTools()
+
+    const createResourceMethod = tools.API.methods.find((m) => m.name === 'createResource')
+    expect(createResourceMethod).toBeDefined()
+
+    // Verify const values are preserved in DatabaseIdParent
+    const databaseIdParent = createResourceMethod!.inputSchema.$defs?.DatabaseIdParent as any
+    expect(databaseIdParent).toBeDefined()
+    expect(databaseIdParent.properties.type.const).toBe('database_id')
+
+    // Verify const values are preserved in the inline workspace option
+    const parentRequest = createResourceMethod!.inputSchema.$defs?.ParentRequest as any
+    expect(parentRequest).toBeDefined()
+    expect(parentRequest.oneOf).toHaveLength(3)
+
+    // The third option is the workspace inline schema
+    const workspaceOption = parentRequest.oneOf[2]
+    expect(workspaceOption.properties.type.const).toBe('workspace')
+  })
 })
 
 // Additional complex test scenarios as a table test
