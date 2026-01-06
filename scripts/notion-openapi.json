@@ -1109,63 +1109,7 @@
                   "properties": {
                     "description": "The property values to update for the page. The keys are the names or IDs of the property and the values are property values. If a page property ID is not included, then it is not changed.",
                     "type": "object",
-                    "properties": {
-                      "title": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "text": {
-                              "type": "object",
-                              "properties": {
-                                "content": {
-                                  "type": "string"
-                                },
-                                "link": {
-                                  "type": [
-                                    "object",
-                                    "null"
-                                  ],
-                                  "properties": {
-                                    "url": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "url"
-                                  ]
-                                }
-                              },
-                              "additionalProperties": false,
-                              "required": [
-                                "content"
-                              ]
-                            },
-                            "type": {
-                              "enum": [
-                                "text"
-                              ],
-                              "type": "string"
-                            }
-                          },
-                          "additionalProperties": false,
-                          "required": [
-                            "text"
-                          ]
-                        },
-                        "maxItems": 100
-                      },
-                      "type": {
-                        "enum": [
-                          "title"
-                        ],
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "title"
-                    ]
+                    "additionalProperties": true
                   },
                   "in_trash": {
                     "type": "boolean",
@@ -1287,42 +1231,9 @@
                     "$ref": "#/components/schemas/parentRequest"
                   },
                   "properties": {
+                    "description": "The property values for the new page. The keys are the names or IDs of the property and the values are property values.",
                     "type": "object",
-                    "properties": {
-                      "title": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "required": [
-                            "text"
-                          ],
-                          "properties": {
-                            "text": {
-                              "type": "object",
-                              "required": [
-                                "content"
-                              ],
-                              "properties": {
-                                "content": {
-                                  "type": "string"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "maxItems": 100
-                      },
-                      "type": {
-                        "enum": [
-                          "title"
-                        ],
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "title"
-                    ]
+                    "additionalProperties": true
                   },
                   "children": {
                     "type": "array",
