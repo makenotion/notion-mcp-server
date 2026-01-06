@@ -850,7 +850,8 @@ describe('OpenAPIToMCPConverter', () => {
   })
 
   it('preserves const values for oneOf discriminators', () => {
-    const spec: OpenAPIV3.Document = {
+    // Using 'as any' because OpenAPIV3 types don't include 'const' but the actual spec supports it
+    const spec = {
       openapi: '3.0.0',
       info: { title: 'Test API', version: '1.0.0' },
       paths: {
@@ -921,7 +922,7 @@ describe('OpenAPIToMCPConverter', () => {
       },
     }
 
-    const converter = new OpenAPIToMCPConverter(spec)
+    const converter = new OpenAPIToMCPConverter(spec as unknown as OpenAPIV3.Document)
     const { tools } = converter.convertToMCPTools()
 
     const createResourceMethod = tools.API.methods.find((m) => m.name === 'createResource')

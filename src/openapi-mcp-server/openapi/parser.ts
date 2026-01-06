@@ -120,7 +120,7 @@ export class OpenAPIToMCPConverter {
 
     // Handle const values (important for oneOf discriminators)
     if ('const' in schema && schema.const !== undefined) {
-      result.const = schema.const
+      result.const = schema.const as IJsonSchema['const']
     }
 
     if (schema.default !== undefined) {
