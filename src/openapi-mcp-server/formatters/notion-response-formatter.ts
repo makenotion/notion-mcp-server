@@ -161,13 +161,30 @@ export class NotionResponseFormatter {
   private formatPagesList(pages: NotionPage[], hasMore: boolean, nextCursor: string | null): string {
     const parts: string[] = [`Found ${pages.length} page(s):\n`]
 
+    let untitledCount = 0
     for (const page of pages) {
-      const title = this.extractPageTitle(page) || 'Untitled'
-      parts.push(`- ${title} [page:${page.id}]`)
+      const title = this.extractPageTitle(page)
+      if (title) {
+        parts.push(`- ${title} [page:${page.id}]`)
+      } else {
+        untitledCount++
+        const propNames = Object.keys(page.properties || {})
+        if (propNames.length > 0) {
+          parts.push(`- Untitled (properties: ${propNames.join(', ')}) [page:${page.id}]`)
+        } else {
+          parts.push(`- Untitled [page:${page.id}]`)
+        }
+      }
     }
 
     if (hasMore && nextCursor) {
       parts.push(`\n[More results available, cursor: ${nextCursor}]`)
+    }
+
+    if (untitledCount > 0 && untitledCount === pages.length) {
+      parts.push(`\n[Note: All pages show as "Untitled" - if using filter_properties, omit it or include the title property ID to see page names]`)
+    } else if (untitledCount > pages.length / 2) {
+      parts.push(`\n[Note: ${untitledCount}/${pages.length} pages are "Untitled" - filter_properties may have excluded the title property]`)
     }
 
     return parts.join('\n')

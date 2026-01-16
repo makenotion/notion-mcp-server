@@ -111,7 +111,7 @@ describe('MCPProxy', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: 'success' }),
+            text: JSON.stringify({ message: 'success' }, null, 2),
           },
         ],
       })
@@ -170,7 +170,7 @@ describe('MCPProxy', () => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: 'success' })
+            text: JSON.stringify({ message: 'success' }, null, 2)
           }
         ]
       })

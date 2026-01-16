@@ -1033,7 +1033,7 @@
           {
             "name": "filter_properties",
             "in": "query",
-            "description": "A list of page property value IDs associated with the page. Use this param to limit the response to a specific page property value or values. To retrieve multiple properties, specify each page property ID. For example: `?filter_properties=iAk8&filter_properties=b7dh`.",
+            "description": "Limits which properties are returned - omit to get all properties including title. Specify property IDs, e.g. `?filter_properties=iAk8&filter_properties=b7dh`.",
             "schema": {
               "type": "string"
             }
@@ -1748,7 +1748,7 @@
           {
             "name": "filter_properties",
             "in": "query",
-            "description": "A list of page property value IDs to limit the response",
+            "description": "Limits which properties (columns) are returned per page - does NOT filter which pages match. Omit to get all properties including titles. To filter pages, use the 'filter' body parameter instead.",
             "schema": {
               "type": "array",
               "items": {

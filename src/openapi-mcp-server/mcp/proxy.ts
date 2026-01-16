@@ -102,6 +102,9 @@ export class MCPProxy {
       }
 
       try {
+        // Check for filter_properties usage and prepare warning
+        const filterPropertiesWarning = this.getFilterPropertiesWarning(params)
+
         // Execute the operation
         const response = await this.httpClient.executeOperation(operation, params)
 
@@ -113,12 +116,17 @@ export class MCPProxy {
           response.data
         )
 
+        // Combine warning with formatted response if applicable
+        const finalText = filterPropertiesWarning
+          ? `${filterPropertiesWarning}\n\n${formattedText}`
+          : formattedText
+
         // Convert response to MCP format
         return {
           content: [
             {
               type: 'text',
-              text: formattedText,
+              text: finalText,
             },
           ],
         }
@@ -146,6 +154,19 @@ export class MCPProxy {
 
   private findOperation(operationId: string): (OpenAPIV3.OperationObject & { method: string; path: string }) | null {
     return this.openApiLookup[operationId] ?? null
+  }
+
+  private getFilterPropertiesWarning(params: Record<string, any> | undefined): string | null {
+    if (!params || !params.filter_properties) {
+      return null
+    }
+
+    const filterProps = params.filter_properties
+    const propsDescription = Array.isArray(filterProps)
+      ? filterProps.join(', ')
+      : String(filterProps)
+
+    return `[Note: filter_properties=[${propsDescription}] limits returned properties, not which pages match. Use 'filter' to filter pages.]`
   }
 
   private parseFilterConfigFromEnv(): ToolFilterConfig | undefined {
