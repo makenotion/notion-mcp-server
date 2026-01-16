@@ -177,7 +177,14 @@ export class HttpClient {
       }
     } catch (error: any) {
       if (error.response) {
-        console.error('Error in http client', error)
+        // Only log errors in non-test environments to keep test output clean
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('Error in http client', {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data,
+          })
+        }
         const headers = new Headers()
         Object.entries(error.response.headers).forEach(([key, value]) => {
           if (value) headers.append(key, value.toString())

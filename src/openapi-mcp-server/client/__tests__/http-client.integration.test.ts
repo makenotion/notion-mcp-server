@@ -1,10 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { HttpClient } from '../http-client'
-import type express from 'express'
-//@ts-ignore
-import { createPetstoreServer } from '../../../examples/petstore-server.cjs'
+import express from 'express'
 import type { OpenAPIV3 } from 'openapi-types'
-import axios from 'axios'
+import type { Server } from 'http'
 
 interface Pet {
   id: number
@@ -14,20 +12,132 @@ interface Pet {
   status: 'available' | 'pending' | 'sold'
 }
 
+// Simple in-memory pet store
+let pets: Pet[] = []
+let nextId = 1
+
+// Initialize/reset pets data
+function resetPets() {
+  pets = [
+    { id: 1, name: 'Fluffy', species: 'Cat', age: 3, status: 'available' },
+    { id: 2, name: 'Max', species: 'Dog', age: 5, status: 'available' },
+    { id: 3, name: 'Tweety', species: 'Bird', age: 1, status: 'sold' },
+  ]
+  nextId = 4
+}
+
+function createTestServer(port: number): Server {
+  const app = express()
+  app.use(express.json())
+
+  // GET /pets - List all pets
+  app.get('/pets', (req, res) => {
+    const status = req.query.status
+    const filtered = status ? pets.filter((p) => p.status === status) : pets
+    res.json(filtered)
+  })
+
+  // POST /pets - Create a pet
+  app.post('/pets', (req, res) => {
+    const newPet: Pet = {
+      id: nextId++,
+      name: req.body.name,
+      species: req.body.species,
+      age: req.body.age,
+      status: 'available',
+    }
+    pets.push(newPet)
+    res.status(201).json(newPet)
+  })
+
+  // GET /pets/:id - Get a pet by ID
+  app.get('/pets/:id', (req: any, res: any) => {
+    const pet = pets.find((p) => p.id === Number(req.params.id))
+    if (!pet) {
+      return res.status(404).json({ error: 'Pet not found' })
+    }
+    res.json(pet)
+  })
+
+  // PUT /pets/:id - Update a pet
+  app.put('/pets/:id', (req: any, res: any) => {
+    const pet = pets.find((p) => p.id === Number(req.params.id))
+    if (!pet) {
+      return res.status(404).json({ error: 'Pet not found' })
+    }
+    if (req.body.status) pet.status = req.body.status
+    res.json(pet)
+  })
+
+  // DELETE /pets/:id - Delete a pet
+  app.delete('/pets/:id', (req: any, res: any) => {
+    const index = pets.findIndex((p) => p.id === Number(req.params.id))
+    if (index === -1) {
+      return res.status(404).json({ error: 'Pet not found' })
+    }
+    pets.splice(index, 1)
+    res.status(204).send()
+  })
+
+  return app.listen(port)
+}
+
 describe('HttpClient Integration Tests', () => {
-  const PORT = 3456
-  const BASE_URL = `http://localhost:${PORT}`
-  let server: ReturnType<typeof express>
+  let PORT: number
+  let BASE_URL: string
+  let server: Server
   let openApiSpec: OpenAPIV3.Document
   let client: HttpClient
 
-  beforeAll(async () => {
-    // Start the petstore server
-    server = createPetstoreServer(PORT) as unknown as express.Express
+  beforeEach(async () => {
+    // Use a random port to avoid conflicts
+    PORT = 3000 + Math.floor(Math.random() * 1000)
+    BASE_URL = `http://localhost:${PORT}`
 
-    // Fetch the OpenAPI spec from the server
-    const response = await axios.get(`${BASE_URL}/openapi.json`)
-    openApiSpec = response.data
+    // Initialize pets data
+    resetPets()
+
+    // Start the test server
+    server = createTestServer(PORT)
+
+    // Create a minimal OpenAPI spec for the test server
+    openApiSpec = {
+      openapi: '3.0.0',
+      info: { title: 'Pet Store API', version: '1.0.0' },
+      servers: [{ url: BASE_URL }],
+      paths: {
+        '/pets': {
+          get: {
+            operationId: 'listPets',
+            parameters: [{ name: 'status', in: 'query', schema: { type: 'string' } }],
+            responses: { '200': { description: 'Success' } },
+          },
+          post: {
+            operationId: 'createPet',
+            requestBody: { content: { 'application/json': { schema: { type: 'object' } } } },
+            responses: { '201': { description: 'Created' } },
+          },
+        },
+        '/pets/{id}': {
+          get: {
+            operationId: 'getPet',
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+            responses: { '200': { description: 'Success' }, '404': { description: 'Not found' } },
+          },
+          put: {
+            operationId: 'updatePet',
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+            requestBody: { content: { 'application/json': { schema: { type: 'object' } } } },
+            responses: { '200': { description: 'Success' }, '404': { description: 'Not found' } },
+          },
+          delete: {
+            operationId: 'deletePet',
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+            responses: { '204': { description: 'Deleted' }, '404': { description: 'Not found' } },
+          },
+        },
+      },
+    }
 
     // Create HTTP client
     client = new HttpClient(
@@ -41,8 +151,7 @@ describe('HttpClient Integration Tests', () => {
     )
   })
 
-  afterAll(() => {
-    //@ts-expect-error
+  afterEach(async () => {
     server.close()
   })
 
