@@ -19,7 +19,7 @@ export async function startServer(args: string[] = process.argv) {
   function parseArgs() {
     const args = process.argv.slice(2);
     let transport = 'stdio'; // default
-    let port = 3000;
+    let port = parseInt(process.env.PORT || '3000', 10);
     let authToken: string | undefined;
 
     for (let i = 0; i < args.length; i++) {
