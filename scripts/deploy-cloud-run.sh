@@ -5,8 +5,16 @@ set -euo pipefail
 PROJECT_ID="${GCP_PROJECT_ID:-tpc-misc}"
 REGION="asia-northeast1"
 SERVICE_NAME="notion-mcp-server"
+SERVICE_URL="https://notion-mcp.tpcground.com"
 IMAGE_URI="gcr.io/${PROJECT_ID}/notion-mcp-server"
 SERVICE_ACCOUNT="notion-mcp-server-runtime@tpc-misc.iam.gserviceaccount.com"
+
+# Authentication mode: 'legacy' or 'oauth'
+AUTH_MODE="${AUTH_MODE:-oauth}"
+
+# TPC OAuth Configuration (required when AUTH_MODE=oauth)
+TPC_OAUTH_BASE_URL="${TPC_OAUTH_BASE_URL:-https://tpc-agent.tpcground.com}"
+TPC_CLIENT_ID="${TPC_CLIENT_ID:-tpc-notion-mcp}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -41,7 +49,7 @@ build_and_push() {
 
 # Deploy to Cloud Run
 deploy() {
-    log_info "Deploying to Cloud Run..."
+    log_info "Deploying to Cloud Run (AUTH_MODE=$AUTH_MODE)..."
 
     # Base deploy command
     local deploy_args=(
@@ -52,18 +60,29 @@ deploy() {
         --allow-unauthenticated
         --service-account="$SERVICE_ACCOUNT"
         --args=--transport,http
-        --set-secrets=NOTION_TOKEN=NOTION_MCP_NOTION_TOKEN:latest,AUTH_TOKEN=NOTION_MCP_AUTH_TOKEN:latest
     )
 
-    gcloud run deploy "$SERVICE_NAME" "${deploy_args[@]}"
-}
+    if [[ "$AUTH_MODE" == "oauth" ]]; then
+        # OAuth mode: Use TPC OAuth server
+        if [[ -z "$TPC_CLIENT_ID" ]]; then
+            log_error "TPC_CLIENT_ID is required for OAuth mode"
+            exit 1
+        fi
 
-# Get service URL
-get_service_url() {
-    gcloud run services describe "$SERVICE_NAME" \
-        --project "$PROJECT_ID" \
-        --region "$REGION" \
-        --format "value(status.url)"
+        # Get the service URL for ISSUER_URL (may need to deploy first time without it)
+
+        deploy_args+=(
+            --set-secrets=NOTION_TOKEN=NOTION_MCP_NOTION_TOKEN:latest,TPC_CLIENT_SECRET=NOTION_MCP_TPC_OAUTH_CLIENT_SECRET:latest
+            --set-env-vars="AUTH_MODE=oauth,TPC_OAUTH_BASE_URL=$TPC_OAUTH_BASE_URL,TPC_CLIENT_ID=$TPC_CLIENT_ID,ISSUER_URL=$SERVICE_URL"
+        )
+    else
+        # Legacy mode: Use static bearer token
+        deploy_args+=(
+            --set-secrets=NOTION_TOKEN=NOTION_MCP_NOTION_TOKEN:latest,AUTH_TOKEN=NOTION_MCP_AUTH_TOKEN:latest
+        )
+    fi
+
+    gcloud run deploy "$SERVICE_NAME" "${deploy_args[@]}"
 }
 
 # Main
@@ -74,23 +93,33 @@ main() {
     build_and_push
     deploy
 
-    local service_url
-    service_url=$(get_service_url)
-
     echo ""
     log_info "Deployment complete!"
     echo "=========================================="
-    echo "Service URL: ${service_url}"
-    echo "MCP Endpoint: ${service_url}/mcp"
-    echo "Health Check: ${service_url}/health"
+    echo "Service URL: ${SERVICE_URL}"
+    echo "MCP Endpoint: ${SERVICE_URL}/mcp"
+    echo "Health Check: ${SERVICE_URL}/health"
+    echo "Auth Mode: ${AUTH_MODE}"
     echo "=========================================="
     echo ""
     echo "To test:"
-    echo "  curl ${service_url}/health"
+    echo "  curl ${SERVICE_URL}/health"
     echo ""
-    echo "To use with MCP client, configure:"
-    echo "  URL: ${service_url}/mcp"
-    echo "  Authorization: Bearer <your-auth-token>"
+
+    if [[ "$AUTH_MODE" == "oauth" ]]; then
+        echo "OAuth mode is enabled. MCP clients will authenticate via TPC OAuth."
+        echo ""
+        echo "OAuth Metadata: ${SERVICE_URL}/.well-known/oauth-authorization-server"
+        echo ""
+        echo "To add to Claude Code (OAuth):"
+        echo "  claude mcp add --transport http tpc-notion ${SERVICE_URL}/mcp"
+    else
+        echo "To add to Claude Code:"
+        echo "  claude mcp add --transport http tpc-notion ${SERVICE_URL}/mcp --header \"Authorization: Bearer \$AUTH_TOKEN\""
+        echo ""
+        echo "Or with specific scope:"
+        echo "  claude mcp add --transport http tpc-notion ${SERVICE_URL}/mcp --header \"Authorization: Bearer \$AUTH_TOKEN\" --scope user"
+    fi
 }
 
 main "$@"
