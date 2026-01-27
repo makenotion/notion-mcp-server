@@ -157,6 +157,32 @@ Add the following to your `settings.json`
 }
 ```
 
+###### GitHub Copilot CLI
+
+Use the Copilot CLI to interactively add the MCP server:
+
+```bash
+/mcp add
+```
+
+Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json` and add:
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+For more information, see the [Copilot CLI documentation](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli).
+
 ##### Using Docker
 
 There are two options for running the MCP server with Docker:
