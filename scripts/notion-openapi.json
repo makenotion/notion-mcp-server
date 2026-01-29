@@ -1162,10 +1162,7 @@
                         "type": "string"
                       }
                     },
-                    "additionalProperties": false,
-                    "required": [
-                      "title"
-                    ]
+                    "additionalProperties": true
                   },
                   "in_trash": {
                     "type": "boolean",
@@ -1319,10 +1316,7 @@
                         "type": "string"
                       }
                     },
-                    "additionalProperties": false,
-                    "required": [
-                      "title"
-                    ]
+                    "additionalProperties": true
                   },
                   "children": {
                     "type": "array",
