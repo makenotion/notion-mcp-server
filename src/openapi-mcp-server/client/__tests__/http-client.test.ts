@@ -534,4 +534,229 @@ describe('HttpClient', () => {
     // Additional check to ensure headers are correctly processed
     expect(response.headers.get('content-type')).toBe('application/json')
   })
+
+  it('should parse stringified JSON object parameters', async () => {
+    mockApi.testOperation = vi.fn().mockResolvedValue({
+      data: { success: true },
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const specWithObjectParam: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/pages': {
+          post: {
+            operationId: 'testOperation',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      parent: {
+                        type: 'object',
+                        properties: {
+                          database_id: { type: 'string' },
+                        },
+                      },
+                      title: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': { description: 'Success' },
+            },
+          },
+        },
+      },
+    }
+
+    const client = new HttpClient({ baseUrl: 'http://test.com' }, specWithObjectParam)
+    const operation = specWithObjectParam.paths['/pages']?.post as OpenAPIV3.OperationObject & { method: string; path: string }
+
+    // Simulate MCP client sending stringified JSON for object parameter
+    await client.executeOperation(operation, {
+      parent: '{"database_id": "abc-123"}',  // String instead of object
+      title: 'Test Page',
+    })
+
+    // Should have parsed the stringified JSON
+    expect(mockApi.testOperation).toHaveBeenCalledWith(
+      {},
+      {
+        parent: { database_id: 'abc-123' },  // Parsed to object
+        title: 'Test Page',
+      },
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  })
+
+  it('should parse stringified JSON array parameters', async () => {
+    mockApi.testOperation = vi.fn().mockResolvedValue({
+      data: { success: true },
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const specWithArrayParam: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'testOperation',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      items: {
+                        type: 'array',
+                        items: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': { description: 'Success' },
+            },
+          },
+        },
+      },
+    }
+
+    const client = new HttpClient({ baseUrl: 'http://test.com' }, specWithArrayParam)
+    const operation = specWithArrayParam.paths['/items']?.post as OpenAPIV3.OperationObject & { method: string; path: string }
+
+    await client.executeOperation(operation, {
+      items: '["a", "b", "c"]',  // String instead of array
+    })
+
+    expect(mockApi.testOperation).toHaveBeenCalledWith(
+      {},
+      {
+        items: ['a', 'b', 'c'],  // Parsed to array
+      },
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  })
+
+  it('should parse stringified JSON with $ref schema', async () => {
+    mockApi.testOperation = vi.fn().mockResolvedValue({
+      data: { success: true },
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const specWithRef: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/pages': {
+          post: {
+            operationId: 'testOperation',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      parent: {
+                        $ref: '#/components/schemas/ParentRequest',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': { description: 'Success' },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          ParentRequest: {
+            type: 'object',
+            properties: {
+              database_id: { type: 'string' },
+            },
+          },
+        },
+      },
+    }
+
+    const client = new HttpClient({ baseUrl: 'http://test.com' }, specWithRef)
+    const operation = specWithRef.paths['/pages']?.post as OpenAPIV3.OperationObject & { method: string; path: string }
+
+    await client.executeOperation(operation, {
+      parent: '{"database_id": "xyz-456"}',
+    })
+
+    expect(mockApi.testOperation).toHaveBeenCalledWith(
+      {},
+      {
+        parent: { database_id: 'xyz-456' },
+      },
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  })
+
+  it('should not parse string parameters that are meant to be strings', async () => {
+    mockApi.testOperation = vi.fn().mockResolvedValue({
+      data: { success: true },
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const specWithStringParam: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/test': {
+          post: {
+            operationId: 'testOperation',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': { description: 'Success' },
+            },
+          },
+        },
+      },
+    }
+
+    const client = new HttpClient({ baseUrl: 'http://test.com' }, specWithStringParam)
+    const operation = specWithStringParam.paths['/test']?.post as OpenAPIV3.OperationObject & { method: string; path: string }
+
+    await client.executeOperation(operation, {
+      name: '{"this": "is a string"}',  // This should stay as string
+    })
+
+    expect(mockApi.testOperation).toHaveBeenCalledWith(
+      {},
+      {
+        name: '{"this": "is a string"}',  // Kept as string
+      },
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+  })
 })

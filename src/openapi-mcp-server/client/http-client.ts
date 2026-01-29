@@ -32,8 +32,10 @@ export class HttpClientError extends Error {
 export class HttpClient {
   private api: Promise<AxiosInstance>
   private client: OpenAPIClientAxios
+  private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document
 
   constructor(config: HttpClientConfig, openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document) {
+    this.openApiSpec = openApiSpec
     // @ts-expect-error
     this.client = new (OpenAPIClientAxios.default ?? OpenAPIClientAxios)({
       definition: openApiSpec,
@@ -47,6 +49,74 @@ export class HttpClient {
       },
     })
     this.api = this.client.init()
+  }
+
+  /**
+   * Parse stringified JSON values in params based on the operation's requestBody schema.
+   * This handles the case where MCP clients serialize object parameters as JSON strings.
+   */
+  private parseStringifiedJsonParams(
+    operation: OpenAPIV3.OperationObject,
+    params: Record<string, any>,
+  ): Record<string, any> {
+    const result = { ...params }
+
+    // Get the requestBody schema
+    const requestBody = operation.requestBody
+    if (!requestBody || '$ref' in requestBody) return result
+
+    const jsonContent = requestBody.content?.['application/json']
+    if (!jsonContent?.schema) return result
+
+    const schema = this.resolveSchema(jsonContent.schema)
+    if (!schema || schema.type !== 'object' || !schema.properties) return result
+
+    // Check each property in the schema
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+      const value = result[propName]
+      if (typeof value !== 'string') continue
+
+      const resolved = this.resolveSchema(propSchema)
+      if (!resolved) continue
+
+      // If schema expects object/array but got string, try to parse it
+      const expectsObject = resolved.type === 'object' || resolved.oneOf || resolved.anyOf || resolved.allOf
+      const expectsArray = resolved.type === 'array'
+
+      if (expectsObject || expectsArray) {
+        try {
+          // Check if it looks like JSON
+          const trimmed = value.trim()
+          if ((expectsObject && trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+              (expectsArray && trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            result[propName] = JSON.parse(value)
+          }
+        } catch {
+          // If parsing fails, keep the original string value
+        }
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Resolve a schema reference to its actual schema object
+   */
+  private resolveSchema(schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject): OpenAPIV3.SchemaObject | null {
+    if ('$ref' in schema) {
+      const ref = schema.$ref
+      if (!ref.startsWith('#/')) return null
+
+      const parts = ref.replace(/^#\//, '').split('/')
+      let current: any = this.openApiSpec
+      for (const part of parts) {
+        current = current?.[part]
+        if (!current) return null
+      }
+      return current as OpenAPIV3.SchemaObject
+    }
+    return schema
   }
 
   private async prepareFileUpload(operation: OpenAPIV3.OperationObject, params: Record<string, any>): Promise<FormData | null> {
@@ -111,20 +181,23 @@ export class HttpClient {
       throw new Error('Operation ID is required')
     }
 
+    // Parse stringified JSON params (handles MCP client serialization issue)
+    const parsedParams = this.parseStringifiedJsonParams(operation, params)
+
     // Handle file uploads if present
-    const formData = await this.prepareFileUpload(operation, params)
+    const formData = await this.prepareFileUpload(operation, parsedParams)
 
     // Separate parameters based on their location
     const urlParameters: Record<string, any> = {}
-    const bodyParams: Record<string, any> = formData || { ...params }
+    const bodyParams: Record<string, any> = formData || { ...parsedParams }
 
     // Extract path and query parameters based on operation definition
     if (operation.parameters) {
       for (const param of operation.parameters) {
         if ('name' in param && param.name && param.in) {
           if (param.in === 'path' || param.in === 'query') {
-            if (params[param.name] !== undefined) {
-              urlParameters[param.name] = params[param.name]
+            if (parsedParams[param.name] !== undefined) {
+              urlParameters[param.name] = parsedParams[param.name]
               if (!formData) {
                 delete bodyParams[param.name]
               }
