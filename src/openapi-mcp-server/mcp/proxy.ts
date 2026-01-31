@@ -23,6 +23,43 @@ type NewToolDefinition = {
   }>
 }
 
+/**
+ * Recursively deserialize stringified JSON values in parameters.
+ * This handles the case where MCP clients (like Cursor, Claude Code) double-serialize
+ * nested object parameters, sending them as JSON strings instead of objects.
+ *
+ * @see https://github.com/makenotion/notion-mcp-server/issues/176
+ */
+function deserializeParams(params: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === 'string') {
+      // Check if the string looks like a JSON object or array
+      const trimmed = value.trim()
+      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+          (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        try {
+          const parsed = JSON.parse(value)
+          // Only use parsed value if it's an object or array
+          if (typeof parsed === 'object' && parsed !== null) {
+            // Recursively deserialize nested objects
+            result[key] = Array.isArray(parsed)
+              ? parsed
+              : deserializeParams(parsed as Record<string, unknown>)
+            continue
+          }
+        } catch {
+          // If parsing fails, keep the original string value
+        }
+      }
+    }
+    result[key] = value
+  }
+
+  return result
+}
+
 // import this class, extend and return server
 export class MCPProxy {
   private server: Server
@@ -96,9 +133,13 @@ export class MCPProxy {
         throw new Error(`Method ${name} not found`)
       }
 
+      // Deserialize any stringified JSON parameters (fixes double-serialization bug)
+      // See: https://github.com/makenotion/notion-mcp-server/issues/176
+      const deserializedParams = params ? deserializeParams(params as Record<string, unknown>) : {}
+
       try {
         // Execute the operation
-        const response = await this.httpClient.executeOperation(operation, params)
+        const response = await this.httpClient.executeOperation(operation, deserializedParams)
 
         // Convert response to MCP format
         return {

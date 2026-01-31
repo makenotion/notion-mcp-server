@@ -333,4 +333,147 @@ describe('MCPProxy', () => {
       expect(server.connect).toHaveBeenCalledWith(mockTransport)
     })
   })
+
+  describe('double-serialization fix (issue #176)', () => {
+    it('should deserialize stringified JSON object parameters', async () => {
+      // Mock HttpClient response
+      const mockResponse = {
+        data: { message: 'success' },
+        status: 200,
+        headers: new Headers({
+          'content-type': 'application/json',
+        }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      // Set up the openApiLookup with our test operation
+      ;(proxy as any).openApiLookup = {
+        'API-updatePage': {
+          operationId: 'updatePage',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/pages/{page_id}',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // Simulate double-serialized parameters (the bug from issue #176)
+      const stringifiedData = JSON.stringify({
+        page_id: 'test-page-id',
+        command: 'update_properties',
+        properties: { Status: 'Done' },
+      })
+
+      await callToolHandler({
+        params: {
+          name: 'API-updatePage',
+          arguments: {
+            data: stringifiedData, // This would normally fail with "Expected object, received string"
+          },
+        },
+      })
+
+      // Verify that the parameters were deserialized before being passed to executeOperation
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          data: {
+            page_id: 'test-page-id',
+            command: 'update_properties',
+            properties: { Status: 'Done' },
+          },
+        },
+      )
+    })
+
+    it('should handle nested stringified JSON parameters', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-createPage': {
+          operationId: 'createPage',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // Nested stringified object
+      const nestedData = JSON.stringify({
+        parent: JSON.stringify({ page_id: 'parent-page-id' }),
+      })
+
+      await callToolHandler({
+        params: {
+          name: 'API-createPage',
+          arguments: {
+            data: nestedData,
+          },
+        },
+      })
+
+      // Verify nested objects were also deserialized
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          data: {
+            parent: { page_id: 'parent-page-id' },
+          },
+        },
+      )
+    })
+
+    it('should preserve non-JSON string parameters', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-search': {
+          operationId: 'search',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/search',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      await callToolHandler({
+        params: {
+          name: 'API-search',
+          arguments: {
+            query: 'hello world', // Regular string, should NOT be parsed
+            filter: '{ not valid json }', // Looks like JSON but isn't valid
+          },
+        },
+      })
+
+      // Verify that non-JSON strings are preserved as-is
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          query: 'hello world',
+          filter: '{ not valid json }',
+        },
+      )
+    })
+  })
 })
