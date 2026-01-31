@@ -269,6 +269,10 @@
   ],
   "tags": [
     {
+      "name": "Databases",
+      "description": "Database endpoints for retrieving database metadata"
+    },
+    {
       "name": "Data sources",
       "description": "Data source endpoints for querying and managing databases"
     },
@@ -2016,6 +2020,70 @@
               "type": "integer",
               "default": 100
             }
+          },
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/databases/{database_id}": {
+      "get": {
+        "summary": "Retrieve a database",
+        "description": "Retrieves a database object using the ID specified. Returns database metadata including the list of data source IDs contained in the database.",
+        "operationId": "retrieve-a-database",
+        "tags": [
+          "Databases"
+        ],
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "Identifier for a Notion database",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
           },
           {
             "$ref": "#/components/parameters/notionVersion"

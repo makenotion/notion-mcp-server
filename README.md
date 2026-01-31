@@ -29,14 +29,13 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 
 ### What changed
 
-**Removed tools (4):**
+**Removed tools (3):**
 
 - `post-database-query` - replaced by `query-data-source`
-- `retrieve-a-database` - replaced by `retrieve-a-data-source`
 - `update-a-database` - replaced by `update-a-data-source`
 - `create-a-database` - replaced by `create-a-data-source`
 
-**New tools (6):**
+**New tools (7):**
 
 - `query-data-source` - Query a data source (database) with filters and sorts
 - `retrieve-a-data-source` - Get metadata and schema for a data source
@@ -44,6 +43,7 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 - `create-a-data-source` - Create a new data source
 - `list-data-source-templates` - List available templates in a data source
 - `move-page` - Move a page to a different parent location
+- `retrieve-a-database` - Get database metadata including its data source IDs
 
 **Parameter changes:**
 
@@ -60,11 +60,12 @@ If you have hardcoded tool names or prompts that reference the old database tool
 | Old Tool (v1.x) | New Tool (v2.0) | Parameter Change |
 | -------------- | --------------- | ---------------- |
 | `post-database-query` | `query-data-source` | `database_id` → `data_source_id` |
-| `retrieve-a-database` | `retrieve-a-data-source` | `database_id` → `data_source_id` |
 | `update-a-database` | `update-a-data-source` | `database_id` → `data_source_id` |
 | `create-a-database` | `create-a-data-source` | No change (uses `parent.page_id`) |
 
-**Total tools now: 21** (was 19 in v1.x)
+> **Note:** `retrieve-a-database` is still available and returns database metadata including the list of data source IDs. Use `retrieve-a-data-source` to get the schema and properties of a specific data source.
+
+**Total tools now: 22** (was 19 in v1.x)
 
 ---
 
