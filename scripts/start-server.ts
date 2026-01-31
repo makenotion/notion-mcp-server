@@ -21,6 +21,7 @@ export async function startServer(args: string[] = process.argv) {
     let transport = 'stdio'; // default
     let port = 3000;
     let authToken: string | undefined;
+    let disableAuth = false;
 
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--transport' && i + 1 < args.length) {
@@ -32,6 +33,8 @@ export async function startServer(args: string[] = process.argv) {
       } else if (args[i] === '--auth-token' && i + 1 < args.length) {
         authToken = args[i + 1];
         i++; // skip next argument
+      } else if (args[i] === '--disable-auth') {
+        disableAuth = true;
       } else if (args[i] === '--help' || args[i] === '-h') {
         console.log(`
 Usage: notion-mcp-server [options]
@@ -40,6 +43,7 @@ Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
   --auth-token <token>   Bearer token for HTTP transport authentication (optional)
+  --disable-auth         Disable bearer token authentication for HTTP transport
   --help, -h             Show this help message
 
 Environment Variables:
@@ -53,6 +57,7 @@ Examples:
   notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
+  notion-mcp-server --transport http --disable-auth    # Use Streamable HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
 `);
         process.exit(0);
@@ -60,7 +65,7 @@ Examples:
       // Ignore unrecognized arguments (like command name passed by Docker)
     }
 
-    return { transport: transport.toLowerCase(), port, authToken };
+    return { transport: transport.toLowerCase(), port, authToken, disableAuth };
   }
 
   const options = parseArgs()
@@ -76,11 +81,14 @@ Examples:
     const app = express()
     app.use(express.json())
 
-    // Generate or use provided auth token (from CLI arg or env var)
-    const authToken = options.authToken || process.env.AUTH_TOKEN || randomBytes(32).toString('hex')
-    if (!options.authToken && !process.env.AUTH_TOKEN) {
-      console.log(`Generated auth token: ${authToken}`)
-      console.log(`Use this token in the Authorization header: Bearer ${authToken}`)
+    // Generate or use provided auth token (from CLI arg or env var) only if auth is enabled
+    let authToken: string | undefined
+    if (!options.disableAuth) {
+      authToken = options.authToken || process.env.AUTH_TOKEN || randomBytes(32).toString('hex')
+      if (!options.authToken && !process.env.AUTH_TOKEN) {
+        console.log(`Generated auth token: ${authToken}`)
+        console.log(`Use this token in the Authorization header: Bearer ${authToken}`)
+      }
     }
 
     // Authorization middleware
@@ -125,8 +133,10 @@ Examples:
       })
     })
 
-    // Apply authentication to all /mcp routes
-    app.use('/mcp', authenticateToken)
+    // Apply authentication to all /mcp routes only if auth is enabled
+    if (!options.disableAuth) {
+      app.use('/mcp', authenticateToken)
+    }
 
     // Map to store transports by session ID
     const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
@@ -219,9 +229,13 @@ Examples:
       console.log(`MCP Server listening on port ${port}`)
       console.log(`Endpoint: http://0.0.0.0:${port}/mcp`)
       console.log(`Health check: http://0.0.0.0:${port}/health`)
-      console.log(`Authentication: Bearer token required`)
-      if (options.authToken) {
-        console.log(`Using provided auth token`)
+      if (options.disableAuth) {
+        console.log(`Authentication: Disabled`)
+      } else {
+        console.log(`Authentication: Bearer token required`)
+        if (options.authToken) {
+          console.log(`Using provided auth token`)
+        }
       }
     })
 
