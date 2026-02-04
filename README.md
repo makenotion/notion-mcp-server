@@ -1,25 +1,78 @@
-# Notion MCP Server
+# Notion MCP Server (OAuth Fork)
 
-> [!NOTE]
->
-> We’ve introduced **Notion MCP**, a remote MCP server with the following improvements:
->
-> - Easy installation via standard OAuth. No need to fiddle with JSON or API tokens anymore.
-> - Powerful tools tailored to AI agents, including editing pages in Markdown. These tools are designed with optimized token consumption in mind.
->
-> Learn more and get started at [Notion MCP documentation](https://developers.notion.com/docs/mcp).
->
-> We are prioritizing, and only providing active support for, **Notion MCP** (remote). As a result:
->
-> - We may sunset this local MCP server repository in the future.
-> - Issues and pull requests here are not actively monitored.
-> - Please do not file issues relating to the remote MCP here; instead, contact Notion support.
+> **Fork of the official [makenotion/notion-mcp-server](https://github.com/makenotion/notion-mcp-server) with OAuth support for CLI tools like Claude Code.**
 
-![notion-mcp-sm](https://github.com/user-attachments/assets/6c07003c-8455-4636-b298-d60ffdf46cd8)
+This fork adds browser-based OAuth authentication that:
+- Opens your browser for secure authorization
+- Stores tokens locally (`~/.config/notion-mcp/token.json`)
+- Automatically uses stored tokens on subsequent runs
+- Works with Claude Code and other MCP clients
+
+## 🔐 OAuth Quick Start
+
+### 1. Create a Public Integration
+
+Go to [notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a **public** integration:
+
+1. Click "New integration"
+2. Choose "Public" integration type
+3. Set a redirect URI: `http://localhost:9876/callback`
+4. Save your **Client ID** and **Client Secret**
+
+### 2. Run with OAuth
+
+```bash
+# First run - opens browser for authorization
+npx @hacctarr/notion-mcp-server --oauth \
+  --oauth-client-id YOUR_CLIENT_ID \
+  --oauth-client-secret YOUR_CLIENT_SECRET
+
+# Subsequent runs - uses stored token automatically
+npx @hacctarr/notion-mcp-server
+```
+
+Or use environment variables:
+
+```bash
+export NOTION_OAUTH_CLIENT_ID=your_client_id
+export NOTION_OAUTH_CLIENT_SECRET=your_client_secret
+npx @hacctarr/notion-mcp-server --oauth
+```
+
+### 3. Configure Claude Code
+
+Add to your `~/.claude/config.json` or `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@hacctarr/notion-mcp-server"],
+      "env": {
+        "NOTION_OAUTH_CLIENT_ID": "your_client_id",
+        "NOTION_OAUTH_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}
+```
+
+### Token Management
+
+```bash
+# View stored token info
+npx @hacctarr/notion-mcp-server --token-info
+
+# Clear stored token (force re-auth)
+npx @hacctarr/notion-mcp-server --clear-token
+```
+
+---
+
+## Original README
 
 This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro).
-
-![mcp-demo](https://github.com/user-attachments/assets/e3ff90a7-7801-48a9-b807-f7dd47f0d3d6)
 
 ---
 

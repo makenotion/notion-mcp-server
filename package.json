@@ -1,5 +1,5 @@
 {
-  "name": "@notionhq/notion-mcp-server",
+  "name": "@hacctarr/notion-mcp-server",
   "keywords": [
     "notion",
     "api",
@@ -26,6 +26,7 @@
     "form-data": "^4.0.1",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
+    "open": "^10.1.0",
     "openapi-client-axios": "^7.5.5",
     "openapi-schema-validator": "^12.1.3",
     "openapi-types": "^12.1.3",
@@ -49,15 +50,15 @@
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"
   },
-  "description": "Official MCP server for Notion API",
+  "description": "MCP server for Notion API with OAuth support (fork of official server)",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/makenotion/notion-mcp-server.git"
+    "url": "git+ssh://git@github.com/hacctarr/notion-mcp-server.git"
   },
-  "author": "@notionhq",
+  "author": "@hacctarr",
   "bugs": {
-    "url": "https://github.com/makenotion/notion-mcp-server/issues"
+    "url": "https://github.com/hacctarr/notion-mcp-server/issues"
   },
-  "homepage": "https://github.com/makenotion/notion-mcp-server#readme"
+  "homepage": "https://github.com/hacctarr/notion-mcp-server#readme"
 }
