@@ -250,6 +250,80 @@
         },
         "additionalProperties": false
       },
+      "tableRowBlockRequest": {
+        "type": "object",
+        "properties": {
+          "table_row": {
+            "type": "object",
+            "properties": {
+              "cells": {
+                "type": "array",
+                "description": "An array of cell contents. Each cell is an array of rich text objects.",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/richTextRequest"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "cells"
+            ]
+          },
+          "type": {
+            "enum": [
+              "table_row"
+            ],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "tableBlockRequest": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "object",
+            "properties": {
+              "table_width": {
+                "type": "integer",
+                "description": "The number of columns in the table."
+              },
+              "has_column_header": {
+                "type": "boolean",
+                "description": "Whether the table has a column header. If true, the first row is treated as a header.",
+                "default": false
+              },
+              "has_row_header": {
+                "type": "boolean",
+                "description": "Whether the table has a row header. If true, the first column is treated as a header.",
+                "default": false
+              },
+              "children": {
+                "type": "array",
+                "description": "An array of table_row block objects.",
+                "items": {
+                  "$ref": "#/components/schemas/tableRowBlockRequest"
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "table_width",
+              "children"
+            ]
+          },
+          "type": {
+            "enum": [
+              "table"
+            ],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "blockObjectRequest": {
         "anyOf": [
           {
@@ -257,6 +331,9 @@
           },
           {
             "$ref": "#/components/schemas/bulletedListItemBlockRequest"
+          },
+          {
+            "$ref": "#/components/schemas/tableBlockRequest"
           }
         ]
       }
