@@ -498,6 +498,20 @@ export class OpenAPIToMCPConverter {
     if (isComplex) {
       return { anyOf: [schema, { type: 'string' }] }
     }
+
+    if (schema.type === 'array' && schema.items) {
+      return {
+        ...schema,
+        items: {
+          anyOf: [
+            schema.items as IJsonSchema,
+            { type: 'string' },
+            { type: 'object', additionalProperties: true },
+          ],
+        },
+      }
+    }
+
     return schema
   }
 
