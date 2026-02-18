@@ -277,13 +277,18 @@ describe('OpenAPI Multipart Form Parser', () => {
         description: expect.stringContaining('Additional pet photos'),
       },
       details: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          age: { type: 'integer' },
-          breed: { type: 'string' },
-        },
-        additionalProperties: true,
+        anyOf: [
+          {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              age: { type: 'integer' },
+              breed: { type: 'string' },
+            },
+            additionalProperties: true,
+          },
+          { type: 'string' },
+        ],
       },
       preferences: {
         type: 'array',
@@ -382,13 +387,18 @@ describe('OpenAPI Multipart Form Parser', () => {
         type: 'integer',
       },
       metadata: {
-        type: 'object',
-        required: ['name'],
-        properties: {
-          name: { type: 'string' },
-          description: { type: 'string' },
-        },
-        additionalProperties: true,
+        anyOf: [
+          {
+            type: 'object',
+            required: ['name'],
+            properties: {
+              name: { type: 'string' },
+              description: { type: 'string' },
+            },
+            additionalProperties: true,
+          },
+          { type: 'string' },
+        ],
       },
       certificate: {
         type: 'string',
@@ -483,8 +493,10 @@ describe('OpenAPI Multipart Form Parser', () => {
     expect(method.inputSchema.required).toContain('id')
     expect(method.inputSchema.required).toContain('record')
 
-    // Verify nested structure is preserved
-    const recordSchema = method.inputSchema.properties!.record as any
+    // Verify nested structure is preserved (record is wrapped in anyOf with string fallback)
+    const recordSchemaWrapper = method.inputSchema.properties!.record as any
+    expect(recordSchemaWrapper.anyOf).toHaveLength(2)
+    const recordSchema = recordSchemaWrapper.anyOf[0]
     expect(recordSchema.type).toBe('object')
     expect(recordSchema.required).toContain('date')
     expect(recordSchema.required).toContain('type')
@@ -579,8 +591,10 @@ describe('OpenAPI Multipart Form Parser', () => {
     expect(method.inputSchema.required).toContain('id')
     expect(method.inputSchema.required).toContain('content')
 
-    // Verify oneOf structure is preserved
-    const contentSchema = method.inputSchema.properties!.content as any
+    // Verify oneOf structure is preserved (content is wrapped in anyOf with string fallback)
+    const contentSchemaWrapper = method.inputSchema.properties!.content as any
+    expect(contentSchemaWrapper.anyOf).toHaveLength(2)
+    const contentSchema = contentSchemaWrapper.anyOf[0]
     expect(contentSchema.oneOf).toHaveLength(2)
 
     // Check photo option

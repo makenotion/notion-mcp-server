@@ -334,6 +334,160 @@ describe('MCPProxy', () => {
     })
   })
 
+  describe('schema validation with string-encoded object params (issue #208)', () => {
+    let callToolHandler: Function
+
+    beforeEach(() => {
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls
+        .flatMap((x: unknown[]) => x)
+        .filter((x: unknown) => typeof x === 'function')
+      callToolHandler = handlers[1]
+    })
+
+    it('should pass schema validation when notion-create-pages receives parent as a JSON string', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-create-a-page': {
+          operationId: 'notion-create-a-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      // Claude Desktop ≥ v1.1.3189 sends object params as JSON strings
+      const parentAsString = JSON.stringify({ database_id: 'abc123' })
+
+      // Should not throw — schema allows string input via withStringFallback
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-create-a-page',
+            arguments: { parent: parentAsString },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      // deserializeParams should have converted it back to an object
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { database_id: 'abc123' },
+        }),
+      )
+    })
+
+    it('should still work when notion-create-pages receives parent as a proper object (backward compatible)', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-create-a-page': {
+          operationId: 'notion-create-a-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-create-a-page',
+            arguments: { parent: { database_id: 'abc123' } },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { database_id: 'abc123' },
+        }),
+      )
+    })
+
+    it('should pass schema validation when notion-update-page receives data as a JSON string', async () => {
+      const mockResponse = {
+        data: { id: 'updated-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-update-page': {
+          operationId: 'notion-update-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/pages/{page_id}',
+        },
+      }
+
+      const dataAsString = JSON.stringify({ properties: { Status: { select: { name: 'Done' } } } })
+
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-update-page',
+            arguments: { data: dataAsString },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: { properties: { Status: { select: { name: 'Done' } } } },
+        }),
+      )
+    })
+
+    it('should call deserializeParams and convert string to object before executeOperation', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-move-pages': {
+          operationId: 'notion-move-pages',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages/move',
+        },
+      }
+
+      const newParentAsString = JSON.stringify({ page_id: 'parent-page-id' })
+
+      await callToolHandler({
+        params: {
+          name: 'notion-move-pages',
+          arguments: { new_parent: newParentAsString },
+        },
+      })
+
+      // Verify executeOperation received the deserialized object, not the string
+      const callArgs = (HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mock.calls[0]
+      const passedParams = callArgs[1]
+      expect(typeof passedParams.new_parent).not.toBe('string')
+      expect(passedParams.new_parent).toEqual({ page_id: 'parent-page-id' })
+    })
+  })
+
   describe('double-serialization fix (issue #176)', () => {
     it('should deserialize stringified JSON object parameters', async () => {
       // Mock HttpClient response
