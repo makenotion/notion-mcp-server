@@ -105,6 +105,8 @@ Alternatively, you can grant page access individually. You'll need to visit the 
 
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
 
+> **Want to run from a local build instead of npm?** See the [Claude Desktop local install guide](docs/claude-desktop-install.md).
+
 ###### Option 1: Using NOTION_TOKEN (recommended)
 
 ```json
