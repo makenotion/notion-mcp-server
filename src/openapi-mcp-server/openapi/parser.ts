@@ -390,7 +390,7 @@ export class OpenAPIToMCPConverter {
           if (paramObj.description) {
             schema.description = paramObj.description
           }
-          inputSchema.properties![paramObj.name] = schema
+          inputSchema.properties![paramObj.name] = this.withStringFallback(schema)
           if (paramObj.required) {
             inputSchema.required!.push(paramObj.name)
           }
@@ -409,7 +409,7 @@ export class OpenAPIToMCPConverter {
           const formSchema = this.convertOpenApiSchemaToJsonSchema(bodyObj.content['multipart/form-data'].schema, new Set(), false)
           if (formSchema.type === 'object' && formSchema.properties) {
             for (const [name, propSchema] of Object.entries(formSchema.properties)) {
-              inputSchema.properties![name] = propSchema
+              inputSchema.properties![name] = this.withStringFallback(propSchema as IJsonSchema)
             }
             if (formSchema.required) {
               inputSchema.required!.push(...formSchema.required!)
@@ -422,14 +422,14 @@ export class OpenAPIToMCPConverter {
           // Merge body schema into the inputSchema's properties
           if (bodySchema.type === 'object' && bodySchema.properties) {
             for (const [name, propSchema] of Object.entries(bodySchema.properties)) {
-              inputSchema.properties![name] = propSchema
+              inputSchema.properties![name] = this.withStringFallback(propSchema as IJsonSchema)
             }
             if (bodySchema.required) {
               inputSchema.required!.push(...bodySchema.required!)
             }
           } else {
             // If the request body is not an object, just put it under "body"
-            inputSchema.properties!['body'] = bodySchema
+            inputSchema.properties!['body'] = this.withStringFallback(bodySchema)
             inputSchema.required!.push('body')
           }
         }
@@ -478,6 +478,41 @@ export class OpenAPIToMCPConverter {
         ...(returnSchema ? { returnSchema } : {}),
       }
     }
+  }
+
+  /**
+   * Wraps a complex schema to also accept a JSON-encoded string.
+   * Handles the case where MCP clients (e.g. Claude Desktop) double-serialize
+   * nested object parameters, sending them as JSON strings instead of objects.
+   * The actual string→object conversion is handled by deserializeParams() in proxy.ts.
+   * @see https://github.com/makenotion/notion-mcp-server/issues/208
+   */
+  private withStringFallback(schema: IJsonSchema): IJsonSchema {
+    const isComplex =
+      schema.type === 'object' ||
+      '$ref' in schema ||
+      'anyOf' in schema ||
+      'oneOf' in schema ||
+      'allOf' in schema
+
+    if (isComplex) {
+      return { anyOf: [schema, { type: 'string' }] }
+    }
+
+    if (schema.type === 'array' && schema.items) {
+      return {
+        ...schema,
+        items: {
+          anyOf: [
+            schema.items as IJsonSchema,
+            { type: 'string' },
+            { type: 'object', additionalProperties: true },
+          ],
+        },
+      }
+    }
+
+    return schema
   }
 
   private extractResponseType(responses: OpenAPIV3.ResponsesObject | undefined): IJsonSchema | null {

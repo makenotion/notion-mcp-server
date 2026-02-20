@@ -1145,10 +1145,15 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
                 inputSchema: {
                   type: 'object',
                   properties: {
-                    // The requestBody references A. We keep it as a single body field with a $ref.
+                    // The requestBody references A. Body is wrapped in anyOf to also accept a JSON string.
                     body: {
-                      $ref: '#/$defs/A',
-                      description: 'A schema description',
+                      anyOf: [
+                        {
+                          $ref: '#/$defs/A',
+                          description: 'A schema description',
+                        },
+                        { type: 'string' },
+                      ],
                     },
                   },
                   required: ['body'],
