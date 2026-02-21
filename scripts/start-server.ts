@@ -12,7 +12,7 @@ export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
   const directory = path.dirname(filename)
   const specPath = path.resolve(directory, '../scripts/notion-openapi.json')
-  
+
   const baseUrl = process.env.BASE_URL ?? undefined
 
   // Parse command line arguments manually (similar to slack-mcp approach)
@@ -151,7 +151,7 @@ Examples:
         if (sessionId && transports[sessionId]) {
           // Reuse existing transport
           transport = transports[sessionId]
-        } else if (!sessionId && isInitializeRequest(req.body)) {
+        } else if (isInitializeRequest(req.body)) {
           // New initialization request
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -207,7 +207,7 @@ Examples:
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
+
       const transport = transports[sessionId]
       await transport.handleRequest(req, res)
     })
@@ -219,7 +219,7 @@ Examples:
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
+
       const transport = transports[sessionId]
       await transport.handleRequest(req, res)
     })
@@ -240,7 +240,7 @@ Examples:
     })
 
     // Return a dummy server for compatibility
-    return { close: () => {} }
+    return { close: () => { } }
   } else {
     throw new Error(`Unsupported transport: ${transport}. Use 'stdio' or 'http'.`)
   }
