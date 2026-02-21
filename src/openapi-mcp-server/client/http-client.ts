@@ -111,6 +111,15 @@ export class HttpClient {
       throw new Error('Operation ID is required')
     }
 
+    // Debug: Log date properties for page operations
+    const isPageOperation = operationId === 'post-page' || operationId === 'patch-page'
+    if (isPageOperation) {
+      const inputDateProps = Object.keys(params).filter(key => key.startsWith('date:'))
+      if (inputDateProps.length > 0) {
+        console.log(`[${operationId}] Input date properties:`, inputDateProps)
+      }
+    }
+
     // Handle file uploads if present
     const formData = await this.prepareFileUpload(operation, params)
 
@@ -141,6 +150,23 @@ export class HttpClient {
           urlParameters[key] = bodyParams[key]
           delete bodyParams[key]
         }
+      }
+    }
+
+    // Validation: Ensure date properties are preserved for page operations
+    if (isPageOperation) {
+      const inputDateProps = Object.keys(params).filter(key => key.startsWith('date:'))
+      const finalDateProps = [
+        ...Object.keys(urlParameters).filter(key => key.startsWith('date:')),
+        ...Object.keys(bodyParams).filter(key => key.startsWith('date:'))
+      ]
+      
+      const missingDateProps = inputDateProps.filter(prop => !finalDateProps.includes(prop))
+      if (missingDateProps.length > 0) {
+        console.warn(`[${operationId}] Date properties may be dropped:`, missingDateProps)
+        console.warn(`[${operationId}] Input params:`, Object.keys(params))
+        console.warn(`[${operationId}] URL params:`, Object.keys(urlParameters))
+        console.warn(`[${operationId}] Body params:`, Object.keys(bodyParams))
       }
     }
 
