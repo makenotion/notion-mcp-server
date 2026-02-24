@@ -1,0 +1,45 @@
+# Development files
+*.test.ts
+__tests__/
+coverage/
+*.tsbuildinfo
+
+# Documentation (keep README)
+docs/
+*.md
+!README.md
+
+# Build artifacts
+*.map
+tsconfig.json
+
+# Environment
+.env*
+*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Docker (not needed for bundle)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Source (use compiled output)
+src/
+
+# Lock files (npm resolves from package.json)
+package-lock.json
+
+# Node modules (npx downloads the package from npm)
+node_modules/
+
+# Build output (npx runs from npm package, not local build)
+bin/
+build/
