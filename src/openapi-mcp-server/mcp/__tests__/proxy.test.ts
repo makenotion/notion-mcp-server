@@ -334,6 +334,160 @@ describe('MCPProxy', () => {
     })
   })
 
+  describe('string-encoded object params deserialized in handler (issue #208)', () => {
+    let callToolHandler: Function
+
+    beforeEach(() => {
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls
+        .flatMap((x: unknown[]) => x)
+        .filter((x: unknown) => typeof x === 'function')
+      callToolHandler = handlers[1]
+    })
+
+    it('should handle notion-create-a-page parent provided as a JSON string', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-create-a-page': {
+          operationId: 'notion-create-a-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      // Claude Desktop ≥ v1.1.3189 sends object params as JSON strings
+      const parentAsString = JSON.stringify({ database_id: 'abc123' })
+
+      // Should not throw in this handler-level test
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-create-a-page',
+            arguments: { parent: parentAsString },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      // deserializeParams should have converted it back to an object
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { database_id: 'abc123' },
+        }),
+      )
+    })
+
+    it('should still work when notion-create-a-page parent is already an object (backward compatible)', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-create-a-page': {
+          operationId: 'notion-create-a-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-create-a-page',
+            arguments: { parent: { database_id: 'abc123' } },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { database_id: 'abc123' },
+        }),
+      )
+    })
+
+    it('should handle notion-update-page data provided as a JSON string', async () => {
+      const mockResponse = {
+        data: { id: 'updated-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-update-page': {
+          operationId: 'notion-update-page',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/pages/{page_id}',
+        },
+      }
+
+      const dataAsString = JSON.stringify({ properties: { Status: { select: { name: 'Done' } } } })
+
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'notion-update-page',
+            arguments: { data: dataAsString },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: { properties: { Status: { select: { name: 'Done' } } } },
+        }),
+      )
+    })
+
+    it('should call deserializeParams and convert string to object before executeOperation', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'notion-move-pages': {
+          operationId: 'notion-move-pages',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages/move',
+        },
+      }
+
+      const newParentAsString = JSON.stringify({ page_id: 'parent-page-id' })
+
+      await callToolHandler({
+        params: {
+          name: 'notion-move-pages',
+          arguments: { new_parent: newParentAsString },
+        },
+      })
+
+      // Verify executeOperation received the deserialized object, not the string
+      const callArgs = (HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mock.calls[0]
+      const passedParams = callArgs[1]
+      expect(typeof passedParams.new_parent).not.toBe('string')
+      expect(passedParams.new_parent).toEqual({ page_id: 'parent-page-id' })
+    })
+  })
+
   describe('double-serialization fix (issue #176)', () => {
     it('should deserialize stringified JSON object parameters', async () => {
       // Mock HttpClient response
@@ -432,6 +586,170 @@ describe('MCPProxy', () => {
             parent: { page_id: 'parent-page-id' },
           },
         },
+      )
+    })
+
+    it('should deserialize JSON string items within an array parameter', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-appendBlockChildren': {
+          operationId: 'appendBlockChildren',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/blocks/{block_id}/children',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // Claude Desktop sends each array item as a JSON string
+      const block1 = JSON.stringify({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Hello' } }] } })
+      const block2 = JSON.stringify({ object: 'block', type: 'heading_1', heading_1: { rich_text: [{ type: 'text', text: { content: 'Title' } }] } })
+
+      await callToolHandler({
+        params: {
+          name: 'API-appendBlockChildren',
+          arguments: {
+            children: [block1, block2],
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          children: [
+            { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Hello' } }] } },
+            { object: 'block', type: 'heading_1', heading_1: { rich_text: [{ type: 'text', text: { content: 'Title' } }] } },
+          ],
+        },
+      )
+    })
+
+    it('should pass through an array of proper objects unchanged', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-appendBlockChildren': {
+          operationId: 'appendBlockChildren',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/blocks/{block_id}/children',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      const block1 = { object: 'block', type: 'paragraph' }
+      const block2 = { object: 'block', type: 'heading_1' }
+
+      await callToolHandler({
+        params: {
+          name: 'API-appendBlockChildren',
+          arguments: {
+            children: [block1, block2],
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        { children: [block1, block2] },
+      )
+    })
+
+    it('should handle a mixed array with both string items and object items', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-appendBlockChildren': {
+          operationId: 'appendBlockChildren',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/blocks/{block_id}/children',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      const blockAsString = JSON.stringify({ object: 'block', type: 'paragraph' })
+      const blockAsObject = { object: 'block', type: 'heading_1' }
+
+      await callToolHandler({
+        params: {
+          name: 'API-appendBlockChildren',
+          arguments: {
+            children: [blockAsString, blockAsObject],
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          children: [
+            { object: 'block', type: 'paragraph' },
+            { object: 'block', type: 'heading_1' },
+          ],
+        },
+      )
+    })
+
+    it('should preserve non-JSON string items within arrays', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-search': {
+          operationId: 'search',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/search',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      await callToolHandler({
+        params: {
+          name: 'API-search',
+          arguments: {
+            tags: ['hello', 'world', '{ not valid json }'],
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        { tags: ['hello', 'world', '{ not valid json }'] },
       )
     })
 
