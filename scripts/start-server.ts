@@ -3,7 +3,9 @@ import { fileURLToPath } from 'url'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, randomBytes } from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
 import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
@@ -42,7 +44,7 @@ Usage: notion-mcp-server [options]
 Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
-  --auth-token <token>   Bearer token for HTTP transport authentication (required unless --disable-auth)
+  --auth-token <token>   Bearer token for HTTP transport authentication (auto-generated if not provided)
   --disable-auth         Disable bearer token authentication for HTTP transport
   --help, -h             Show this help message
 
@@ -54,7 +56,7 @@ Environment Variables:
 Examples:
   notion-mcp-server                                    # Use stdio transport (default)
   notion-mcp-server --transport stdio                  # Use stdio transport explicitly
-  notion-mcp-server --transport http --auth-token mytoken  # Use Streamable HTTP transport on port 3000
+  notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
   notion-mcp-server --transport http --disable-auth    # Use Streamable HTTP transport without authentication
@@ -83,12 +85,14 @@ Examples:
 
     // Generate or use provided auth token (from CLI arg or env var) only if auth is enabled
     let authToken: string | undefined
+    let authTokenFilePath: string | undefined
     if (!options.disableAuth) {
-      authToken = options.authToken || process.env.AUTH_TOKEN
-      if (!authToken) {
-        console.error('Error: No auth token provided for HTTP transport.')
-        console.error('Provide a token via --auth-token <token> or AUTH_TOKEN env var, or use --disable-auth to disable authentication.')
-        process.exit(1)
+      authToken = options.authToken || process.env.AUTH_TOKEN || randomBytes(32).toString('hex')
+      if (!options.authToken && !process.env.AUTH_TOKEN) {
+        // Write auto-generated token to a file with restricted permissions instead of logging it
+        authTokenFilePath = path.join(os.tmpdir(), `.notion-mcp-auth-token-${process.pid}`)
+        fs.writeFileSync(authTokenFilePath, authToken, { mode: 0o600 })
+        console.log(`Generated auth token written to: ${authTokenFilePath}`)
       }
     }
 
@@ -226,7 +230,7 @@ Examples:
     })
 
     const port = options.port
-    app.listen(port, '0.0.0.0', () => {
+    app.listen(port, '0.0.0.0', async () => {
       console.log(`MCP Server listening on port ${port}`)
       console.log(`Endpoint: http://0.0.0.0:${port}/mcp`)
       console.log(`Health check: http://0.0.0.0:${port}/health`)
@@ -234,8 +238,28 @@ Examples:
         console.log(`Authentication: Disabled`)
       } else {
         console.log(`Authentication: Bearer token required`)
-        if (options.authToken) {
-          console.log(`Using provided auth token`)
+        if (authTokenFilePath) {
+          console.log(`Read your auth token from: ${authTokenFilePath}`)
+        }
+      }
+      // Try to resolve the Notion integration link so users can manage their token
+      const notionToken = process.env.NOTION_TOKEN
+      if (notionToken) {
+        try {
+          const res = await fetch('https://api.notion.com/v1/users/me', {
+            headers: {
+              'Authorization': `Bearer ${notionToken}`,
+              'Notion-Version': '2022-06-28',
+            },
+          })
+          if (res.ok) {
+            const data = await res.json() as { id?: string; type?: string }
+            if (data.id && data.type === 'bot') {
+              console.log(`Notion integration settings: https://www.notion.so/profile/integrations/internal/${data.id}`)
+            }
+          }
+        } catch {
+          // Non-critical: silently ignore if we can't resolve the bot ID
         }
       }
     })
