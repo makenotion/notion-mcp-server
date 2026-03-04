@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
-import { randomUUID, randomBytes } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
@@ -42,7 +42,7 @@ Usage: notion-mcp-server [options]
 Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
-  --auth-token <token>   Bearer token for HTTP transport authentication (optional)
+  --auth-token <token>   Bearer token for HTTP transport authentication (required unless --disable-auth)
   --disable-auth         Disable bearer token authentication for HTTP transport
   --help, -h             Show this help message
 
@@ -54,7 +54,7 @@ Environment Variables:
 Examples:
   notion-mcp-server                                    # Use stdio transport (default)
   notion-mcp-server --transport stdio                  # Use stdio transport explicitly
-  notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
+  notion-mcp-server --transport http --auth-token mytoken  # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
   notion-mcp-server --transport http --disable-auth    # Use Streamable HTTP transport without authentication
@@ -84,10 +84,11 @@ Examples:
     // Generate or use provided auth token (from CLI arg or env var) only if auth is enabled
     let authToken: string | undefined
     if (!options.disableAuth) {
-      authToken = options.authToken || process.env.AUTH_TOKEN || randomBytes(32).toString('hex')
-      if (!options.authToken && !process.env.AUTH_TOKEN) {
-        console.log(`Generated auth token: ${authToken}`)
-        console.log(`Use this token in the Authorization header: Bearer ${authToken}`)
+      authToken = options.authToken || process.env.AUTH_TOKEN
+      if (!authToken) {
+        console.error('Error: No auth token provided for HTTP transport.')
+        console.error('Provide a token via --auth-token <token> or AUTH_TOKEN env var, or use --disable-auth to disable authentication.')
+        process.exit(1)
       }
     }
 

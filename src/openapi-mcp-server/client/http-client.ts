@@ -182,7 +182,6 @@ export class HttpClient {
           console.error('Error in http client', {
             status: error.response.status,
             statusText: error.response.statusText,
-            data: error.response.data,
           })
         }
         const headers = new Headers()
