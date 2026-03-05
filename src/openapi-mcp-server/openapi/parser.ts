@@ -422,7 +422,17 @@ export class OpenAPIToMCPConverter {
           // Merge body schema into the inputSchema's properties
           if (bodySchema.type === 'object' && bodySchema.properties) {
             for (const [name, propSchema] of Object.entries(bodySchema.properties)) {
-              inputSchema.properties![name] = propSchema
+              // Special handling for "properties" field in page operations to support expanded date properties
+              if (name === 'properties' && (operation.operationId === 'post-page' || operation.operationId === 'patch-page')) {
+                const modifiedPropSchema = typeof propSchema === 'object' ? { ...propSchema as IJsonSchema } : propSchema
+                // Allow additional properties to support expanded date property format (e.g., date:PropertyName:start)
+                if (typeof modifiedPropSchema === 'object' && modifiedPropSchema.type === 'object') {
+                  modifiedPropSchema.additionalProperties = true
+                }
+                inputSchema.properties![name] = modifiedPropSchema
+              } else {
+                inputSchema.properties![name] = propSchema
+              }
             }
             if (bodySchema.required) {
               inputSchema.required!.push(...bodySchema.required!)
