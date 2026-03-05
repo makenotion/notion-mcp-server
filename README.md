@@ -333,7 +333,7 @@ When using Streamable HTTP transport, the server will be available at `http://0.
 
 The Streamable HTTP transport requires bearer token authentication for security. You have three options:
 
-###### Option 1: Auto-generated token (recommended for development)
+###### Option 1: Auto-generated token (only for development)
 
 ```bash
 npx @notionhq/notion-mcp-server --transport http
