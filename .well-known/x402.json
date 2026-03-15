@@ -1,0 +1,28 @@
+{
+  "name": "makenotion/notion-mcp-server",
+  "description": "Official MCP server for Notion API",
+  "accepts": [
+    {
+      "network": "eip155:8453",
+      "asset": "USDC",
+      "address": "YOUR_WALLET_ADDRESS"
+    }
+  ],
+  "resources": [
+    {
+      "path": "/notion",
+      "price": "0.01",
+      "description": "Pay-per-call access to notion"
+    },
+    {
+      "path": "/api",
+      "price": "0.01",
+      "description": "Pay-per-call access to api"
+    },
+    {
+      "path": "/server",
+      "price": "0.01",
+      "description": "Pay-per-call access to server"
+    }
+  ]
+}
