@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency: deploy
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: [self-hosted, linux]
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: tpc-misc
+          workload_identity_provider: projects/299329474524/locations/global/workloadIdentityPools/github/providers/my-repo
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and push Docker image
+        env:
+          IMAGE: gcr.io/tpc-misc/notion-mcp-server
+        run: |
+          docker build --platform linux/amd64 -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy notion-mcp-server \
+            --project=tpc-misc \
+            --region=asia-northeast1 \
+            --image=gcr.io/tpc-misc/notion-mcp-server \
+            --service-account=notion-mcp-server-runtime@tpc-misc.iam.gserviceaccount.com \
+            --set-env-vars="AUTH_MODE=oauth,TPC_OAUTH_BASE_URL=https://tpc-agent.tpcground.com,TPC_CLIENT_ID=tpc-notion-mcp,ISSUER_URL=https://notion-mcp.tpcground.com" \
+            --set-secrets="NOTION_TOKEN=NOTION_MCP_NOTION_TOKEN:latest,TPC_CLIENT_SECRET=NOTION_MCP_TPC_OAUTH_CLIENT_SECRET:latest" \
+            --allow-unauthenticated \
+            --args=--transport,http
