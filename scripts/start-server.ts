@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
@@ -10,42 +10,52 @@ import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
 
-export async function startServer(args: string[] = process.argv) {
-  const filename = fileURLToPath(import.meta.url)
-  const directory = path.dirname(filename)
-  const specPath = path.resolve(directory, '../scripts/notion-openapi.json')
-  
-  const baseUrl = process.env.BASE_URL ?? undefined
+type ServerOptions = {
+  transport: string
+  port: number
+  host: string
+  authToken: string | undefined
+  disableAuth: boolean
+}
 
-  // Parse command line arguments manually (similar to slack-mcp approach)
-  function parseArgs() {
-    const args = process.argv.slice(2);
-    let transport = 'stdio'; // default
-    let port = 3000;
-    let authToken: string | undefined;
-    let disableAuth = false;
+export function isLoopbackHost(host: string): boolean {
+  const normalizedHost = host.trim().toLowerCase()
+  return normalizedHost === 'localhost' || normalizedHost === '127.0.0.1' || normalizedHost === '::1'
+}
 
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === '--transport' && i + 1 < args.length) {
-        transport = args[i + 1];
-        i++; // skip next argument
-      } else if (args[i] === '--port' && i + 1 < args.length) {
-        port = parseInt(args[i + 1], 10);
-        i++; // skip next argument
-      } else if (args[i] === '--auth-token' && i + 1 < args.length) {
-        authToken = args[i + 1];
-        i++; // skip next argument
-      } else if (args[i] === '--disable-auth') {
-        disableAuth = true;
-      } else if (args[i] === '--help' || args[i] === '-h') {
-        console.log(`
+export function parseServerOptions(argv: string[] = process.argv): ServerOptions {
+  const args = argv.slice(2);
+  let transport = 'stdio'; // default
+  let port = 3000;
+  let host = '0.0.0.0';
+  let authToken: string | undefined;
+  let disableAuth = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--transport' && i + 1 < args.length) {
+      transport = args[i + 1];
+      i++; // skip next argument
+    } else if (args[i] === '--port' && i + 1 < args.length) {
+      port = parseInt(args[i + 1], 10);
+      i++; // skip next argument
+    } else if (args[i] === '--host' && i + 1 < args.length) {
+      host = args[i + 1];
+      i++; // skip next argument
+    } else if (args[i] === '--auth-token' && i + 1 < args.length) {
+      authToken = args[i + 1];
+      i++; // skip next argument
+    } else if (args[i] === '--disable-auth') {
+      disableAuth = true;
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      console.log(`
 Usage: notion-mcp-server [options]
 
 Options:
   --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
   --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
+  --host <host>          Host for HTTP server when using Streamable HTTP transport (default: 0.0.0.0)
   --auth-token <token>   Bearer token for HTTP transport authentication (auto-generated if not provided)
-  --disable-auth         Disable bearer token authentication for HTTP transport
+  --disable-auth         Disable bearer token authentication for HTTP transport; requires --host localhost, 127.0.0.1, or ::1
   --help, -h             Show this help message
 
 Environment Variables:
@@ -58,19 +68,38 @@ Examples:
   notion-mcp-server --transport stdio                  # Use stdio transport explicitly
   notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
   notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
+  notion-mcp-server --transport http --host 127.0.0.1  # Bind HTTP transport to localhost only
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
-  notion-mcp-server --transport http --disable-auth    # Use Streamable HTTP transport without authentication
+  notion-mcp-server --transport http --host 127.0.0.1 --disable-auth # Use local-only HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
 `);
-        process.exit(0);
-      }
-      // Ignore unrecognized arguments (like command name passed by Docker)
+      process.exit(0);
     }
-
-    return { transport: transport.toLowerCase(), port, authToken, disableAuth };
+    // Ignore unrecognized arguments (like command name passed by Docker)
   }
 
-  const options = parseArgs()
+  return { transport: transport.toLowerCase(), port, host, authToken, disableAuth };
+}
+
+export function validateServerOptions(options: ServerOptions): void {
+  if (options.transport === 'http' && options.disableAuth && !isLoopbackHost(options.host)) {
+    throw new Error('--disable-auth is only allowed when HTTP transport binds to a loopback host. Use --host 127.0.0.1, --host localhost, or --host ::1 for local-only testing.')
+  }
+}
+
+function formatHostForUrl(host: string): string {
+  return host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
+}
+
+export async function startServer(args: string[] = process.argv) {
+  const filename = fileURLToPath(import.meta.url)
+  const directory = path.dirname(filename)
+  const specPath = path.resolve(directory, '../scripts/notion-openapi.json')
+
+  const baseUrl = process.env.BASE_URL ?? undefined
+
+  const options = parseServerOptions(args)
+  validateServerOptions(options)
   const transport = options.transport
 
   if (transport === 'stdio') {
@@ -230,12 +259,14 @@ Examples:
     })
 
     const port = options.port
-    app.listen(port, '0.0.0.0', async () => {
-      console.log(`MCP Server listening on port ${port}`)
-      console.log(`Endpoint: http://0.0.0.0:${port}/mcp`)
-      console.log(`Health check: http://0.0.0.0:${port}/health`)
+    const host = options.host
+    const urlHost = formatHostForUrl(host)
+    app.listen(port, host, async () => {
+      console.log(`MCP Server listening on ${host}:${port}`)
+      console.log(`Endpoint: http://${urlHost}:${port}/mcp`)
+      console.log(`Health check: http://${urlHost}:${port}/health`)
       if (options.disableAuth) {
-        console.log(`Authentication: Disabled`)
+        console.warn(`Authentication: Disabled (loopback-only)`)
       } else {
         console.log(`Authentication: Bearer token required`)
         if (authTokenFilePath) {
@@ -271,12 +302,15 @@ Examples:
   }
 }
 
-startServer(process.argv).catch(error => {
-  if (error instanceof ValidationError) {
-    console.error('Invalid OpenAPI 3.1 specification:')
-    error.errors.forEach(err => console.error(err))
-  } else {
-    console.error('Error:', error)
-  }
-  process.exit(1)
-})
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : undefined
+if (import.meta.url === invokedPath) {
+  startServer(process.argv).catch(error => {
+    if (error instanceof ValidationError) {
+      console.error('Invalid OpenAPI 3.1 specification:')
+      error.errors.forEach(err => console.error(err))
+    } else {
+      console.error('Error:', error)
+    }
+    process.exit(1)
+  })
+}

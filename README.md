@@ -323,15 +323,18 @@ npx @notionhq/notion-mcp-server --transport http
 # Run on a custom port
 npx @notionhq/notion-mcp-server --transport http --port 8080
 
+# Bind the HTTP server to localhost only
+npx @notionhq/notion-mcp-server --transport http --host 127.0.0.1
+
 # Run with a custom authentication token
 npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
 ```
 
-When using Streamable HTTP transport, the server will be available at `http://0.0.0.0:<port>/mcp`.
+When using Streamable HTTP transport, the server binds to `0.0.0.0` by default and will be available at `http://0.0.0.0:<port>/mcp`. Use `--host` to restrict the bind address.
 
 ##### Authentication
 
-The Streamable HTTP transport requires bearer token authentication for security. You have three options:
+The Streamable HTTP transport requires bearer token authentication by default for security. You have four options:
 
 ###### Option 1: Auto-generated token (only for development)
 
@@ -339,11 +342,11 @@ The Streamable HTTP transport requires bearer token authentication for security.
 npx @notionhq/notion-mcp-server --transport http
 ```
 
-The server will generate a secure random token and display it in the console:
+The server will generate a secure random token, write it to a temporary file with restricted permissions, and display the file path in the console:
 
 ```text
-Generated auth token: a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
-Use this token in the Authorization header: Bearer a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
+Generated auth token written to: /tmp/.notion-mcp-auth-token-12345
+Read your auth token from: /tmp/.notion-mcp-auth-token-12345
 ```
 
 ###### Option 2: Custom token via command line (recommended for production)
@@ -359,6 +362,14 @@ AUTH_TOKEN="your-secret-token" npx @notionhq/notion-mcp-server --transport http
 ```
 
 The command line argument `--auth-token` takes precedence over the `AUTH_TOKEN` environment variable if both are provided.
+
+###### Option 4: Disable authentication for local-only development
+
+```bash
+npx @notionhq/notion-mcp-server --transport http --host 127.0.0.1 --disable-auth
+```
+
+The `--disable-auth` flag is only accepted when the HTTP server is bound to a loopback host (`127.0.0.1`, `localhost`, or `::1`). Starting HTTP transport with `--disable-auth` on the default `0.0.0.0` bind address fails fast.
 
 ##### Making HTTP requests
 
