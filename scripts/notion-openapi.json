@@ -250,6 +250,232 @@
         },
         "additionalProperties": false
       },
+      "heading1BlockRequest": {
+        "type": "object",
+        "properties": {
+          "heading_1": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["heading_1"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "heading2BlockRequest": {
+        "type": "object",
+        "properties": {
+          "heading_2": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["heading_2"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "heading3BlockRequest": {
+        "type": "object",
+        "properties": {
+          "heading_3": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["heading_3"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "toDoBlockRequest": {
+        "type": "object",
+        "properties": {
+          "to_do": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              },
+              "checked": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["to_do"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "toggleBlockRequest": {
+        "type": "object",
+        "properties": {
+          "toggle": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["toggle"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "codeBlockRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              },
+              "caption": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["code"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "quoteBlockRequest": {
+        "type": "object",
+        "properties": {
+          "quote": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["quote"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "calloutBlockRequest": {
+        "type": "object",
+        "properties": {
+          "callout": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["callout"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "numberedListItemBlockRequest": {
+        "type": "object",
+        "properties": {
+          "numbered_list_item": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          },
+          "type": {
+            "enum": ["numbered_list_item"],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "blockObjectRequest": {
         "anyOf": [
           {
@@ -902,11 +1128,19 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "type": {
-                    "type": "object",
-                    "description": "The [block object `type`](ref:block#block-object-keys) value with the properties to be updated. Currently only `text` (for supported block types) and `checked` (for `to_do` blocks) fields can be updated.",
-                    "properties": {}
-                  },
+                  "anyOf": [
+                  {"$ref": "#/components/schemas/paragraphBlockRequest"},
+                  {"$ref": "#/components/schemas/bulletedListItemBlockRequest"},
+                  {"$ref": "#/components/schemas/heading1BlockRequest"},
+                  {"$ref": "#/components/schemas/heading2BlockRequest"},
+                  {"$ref": "#/components/schemas/heading3BlockRequest"},
+                  {"$ref": "#/components/schemas/toDoBlockRequest"},
+                  {"$ref": "#/components/schemas/toggleBlockRequest"},
+                  {"$ref": "#/components/schemas/codeBlockRequest"},
+                  {"$ref": "#/components/schemas/quoteBlockRequest"},
+                  {"$ref": "#/components/schemas/calloutBlockRequest"},
+                  {"$ref": "#/components/schemas/numberedListItemBlockRequest"}
+                ],
                   "archived": {
                     "type": "boolean",
                     "description": "Set to true to archive (delete) a block. Set to false to un-archive (restore) a block.",
