@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
-    "axios": "^1.8.4",
-    "express": "^4.21.2",
+    "axios": "^1.15.2",
+    "express": "^4.22.1",
     "form-data": "^4.0.1",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
@@ -32,6 +32,11 @@
     "which": "^5.0.0",
     "yargs": "^17.7.2",
     "zod": "3.24.1"
+  },
+  "overrides": {
+    "@hono/node-server": "1.19.14",
+    "follow-redirects": "1.16.0",
+    "hono": "4.12.16"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
