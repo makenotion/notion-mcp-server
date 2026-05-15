@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "scripts/start-server.ts",
+      "use": "@vercel/node",
+      "config": { "bundle": true }
+    }
+  ],
+  "rewrites": [{ "source": "/(.*)", "destination": "scripts/start-server.ts" }]
+}

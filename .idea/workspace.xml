@@ -4,13 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e08aa536-b95c-416d-8ba8-58166f438770" name="Changes" comment="静态分析ts问题" />
+    <list default="true" id="e08aa536-b95c-416d-8ba8-58166f438770" name="Changes" comment="return to official version">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="official" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProblemsViewState">
@@ -29,10 +36,11 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "vercel",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/DIY/Vercel/notion-mcp-server",
     "node.js.detected.package.eslint": "true",
@@ -83,11 +91,30 @@
       <option name="project" value="LOCAL" />
       <updated>1778833791380</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="return to official version">
+      <option name="closed" value="true" />
+      <created>1778834253876</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1778834253876</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="ESM problem" />
@@ -95,6 +122,7 @@
     <MESSAGE value="关闭“禁止隐式 any”的检查" />
     <MESSAGE value="EXPRESS问题" />
     <MESSAGE value="静态分析ts问题" />
-    <option name="LAST_COMMIT_MESSAGE" value="静态分析ts问题" />
+    <MESSAGE value="return to official version" />
+    <option name="LAST_COMMIT_MESSAGE" value="return to official version" />
   </component>
 </project>
