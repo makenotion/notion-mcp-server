@@ -5,6 +5,13 @@ import { OpenAPIToMCPConverter } from '../openapi/parser'
 import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { trimResponse, getDefaultFormat } from './trim-response'
+import {
+  getCustomToolDefinitions,
+  isCustomTool,
+  handleGetPageContentMarkdown,
+  handleQueryMeetingsSummary,
+} from './custom-tools'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -143,12 +150,59 @@ export class MCPProxy {
         })
       })
 
+      // Append custom tools (defined outside OpenAPI spec)
+      for (const customTool of getCustomToolDefinitions()) {
+        tools.push({
+          ...customTool,
+          annotations: { title: customTool.name, readOnlyHint: true },
+        })
+      }
+
       return { tools }
     })
 
     // Handle tool calling
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: params } = request.params
+
+      // Custom tools (not in OpenAPI spec) — dispatch first
+      if (isCustomTool(name)) {
+        const deserializedParams = params ? deserializeParams(params as Record<string, unknown>) : {}
+        try {
+          let data: any
+          if (name === 'get-page-content-markdown') {
+            data = await handleGetPageContentMarkdown(this.httpClient, deserializedParams as any)
+          } else if (name === 'query-meetings-summary') {
+            data = await handleQueryMeetingsSummary(this.httpClient, deserializedParams as any)
+          }
+          const trimmed = trimResponse(data, getDefaultFormat())
+          return {
+            content: [
+              {
+                type: 'text',
+                text: typeof trimmed === 'string' ? trimmed : JSON.stringify(trimmed),
+              },
+            ],
+          }
+        } catch (error) {
+          console.error(`Error in custom tool ${name}`, error instanceof Error ? error.message : 'Unknown error')
+          if (error instanceof HttpClientError) {
+            const data = error.data?.response?.data ?? error.data ?? {}
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    status: 'error',
+                    ...(typeof data === 'object' ? data : { data: data }),
+                  }),
+                },
+              ],
+            }
+          }
+          throw error
+        }
+      }
 
       // Find the operation in OpenAPI spec
       const operation = this.findOperation(name)
@@ -164,12 +218,17 @@ export class MCPProxy {
         // Execute the operation
         const response = await this.httpClient.executeOperation(operation, deserializedParams)
 
+        // Trim response to reduce AI token consumption.
+        // Default: ブロック系は markdown、それ以外は compact JSON。
+        // NOTION_MCP_RESPONSE_FORMAT=raw でレガシー挙動。
+        const trimmed = trimResponse(response.data, getDefaultFormat())
+
         // Convert response to MCP format
         return {
           content: [
             {
               type: 'text', // currently this is the only type that seems to be used by mcp server
-              text: JSON.stringify(response.data), // TODO: pass through the http status code text?
+              text: typeof trimmed === 'string' ? trimmed : JSON.stringify(trimmed),
             },
           ],
         }

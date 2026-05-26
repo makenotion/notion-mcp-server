@@ -175,6 +175,104 @@ describe('MCPProxy', () => {
         ]
       })
     })
+
+    describe('response trimming via NOTION_MCP_RESPONSE_FORMAT', () => {
+      const blockListResponse = {
+        object: 'list',
+        results: [
+          {
+            object: 'block',
+            id: 'block-1',
+            parent: { type: 'page_id', page_id: 'p1' },
+            created_time: '2026-01-01T00:00:00.000Z',
+            last_edited_time: '2026-01-01T00:00:00.000Z',
+            created_by: { object: 'user', id: 'u1' },
+            last_edited_by: { object: 'user', id: 'u1' },
+            has_children: false,
+            archived: false,
+            in_trash: false,
+            type: 'heading_1',
+            heading_1: {
+              rich_text: [
+                {
+                  type: 'text',
+                  text: { content: 'Hello', link: null },
+                  annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: 'default' },
+                  plain_text: 'Hello',
+                  href: null,
+                },
+              ],
+              color: 'default',
+              is_toggleable: false,
+            },
+          },
+        ],
+        has_more: false,
+        next_cursor: null,
+      }
+
+      async function callHandler(format: string | undefined) {
+        const prev = process.env.NOTION_MCP_RESPONSE_FORMAT
+        if (format === undefined) delete process.env.NOTION_MCP_RESPONSE_FORMAT
+        else process.env.NOTION_MCP_RESPONSE_FORMAT = format
+
+        try {
+          ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue({
+            data: blockListResponse,
+            status: 200,
+            headers: new Headers(),
+          })
+          ;(proxy as any).openApiLookup = {
+            'API-getChildren': {
+              operationId: 'getChildren',
+              responses: { '200': { description: 'ok' } },
+              method: 'get',
+              path: '/test',
+            },
+          }
+          const server = (proxy as any).server
+          const handlers = server.setRequestHandler.mock.calls
+            .flatMap((x: unknown[]) => x)
+            .filter((x: unknown) => typeof x === 'function')
+          const callToolHandler = handlers[1]
+          const result = await callToolHandler({ params: { name: 'API-getChildren', arguments: {} } })
+          return result.content[0].text as string
+        } finally {
+          if (prev === undefined) delete process.env.NOTION_MCP_RESPONSE_FORMAT
+          else process.env.NOTION_MCP_RESPONSE_FORMAT = prev
+        }
+      }
+
+      it('format=raw preserves all original fields', async () => {
+        const text = await callHandler('raw')
+        const parsed = JSON.parse(text)
+        expect(parsed.results[0].created_by).toBeDefined()
+        expect(parsed.results[0].parent).toBeDefined()
+        expect(parsed.results[0].heading_1.rich_text[0].annotations).toBeDefined()
+      })
+
+      it('format=compact strips redundant metadata', async () => {
+        const text = await callHandler('compact')
+        const parsed = JSON.parse(text)
+        expect(parsed.results[0].created_by).toBeUndefined()
+        expect(parsed.results[0].parent).toBeUndefined()
+        expect(parsed.results[0].archived).toBeUndefined()
+        expect(parsed.results[0].heading_1.rich_text[0].plain_text).toBe('Hello')
+      })
+
+      it('format=markdown converts block list to markdown string field', async () => {
+        const text = await callHandler('markdown')
+        const parsed = JSON.parse(text)
+        expect(parsed.markdown).toBeDefined()
+        expect(parsed.markdown).toContain('# Hello')
+      })
+
+      it('default (no env) uses markdown for block list', async () => {
+        const text = await callHandler(undefined)
+        const parsed = JSON.parse(text)
+        expect(parsed.markdown).toBeDefined()
+      })
+    })
   })
 
   describe('getContentType', () => {

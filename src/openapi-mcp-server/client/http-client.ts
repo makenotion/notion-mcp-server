@@ -194,4 +194,41 @@ export class HttpClient {
       throw error
     }
   }
+
+  /**
+   * Low-level Notion API call for custom tools that don't map to OpenAPI operations.
+   * Reuses the same authenticated axios instance.
+   */
+  async callRaw<T = any>(
+    method: 'GET' | 'POST',
+    path: string,
+    options: { query?: Record<string, any>; body?: any } = {}
+  ): Promise<HttpClientResponse<T>> {
+    const api = await this.api
+    try {
+      const response =
+        method === 'GET'
+          ? await api.get(path, { params: options.query })
+          : await api.post(path, options.body, { params: options.query })
+      const responseHeaders = new Headers()
+      Object.entries(response.headers).forEach(([key, value]) => {
+        if (value) responseHeaders.append(key, value.toString())
+      })
+      return { data: response.data, status: response.status, headers: responseHeaders }
+    } catch (error: any) {
+      if (error.response) {
+        const headers = new Headers()
+        Object.entries(error.response.headers || {}).forEach(([key, value]) => {
+          if (value) headers.append(key, value.toString())
+        })
+        throw new HttpClientError(
+          error.response.statusText || 'Request failed',
+          error.response.status,
+          error.response.data,
+          headers
+        )
+      }
+      throw error
+    }
+  }
 }
