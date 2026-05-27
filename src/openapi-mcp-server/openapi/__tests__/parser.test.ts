@@ -942,6 +942,79 @@ describe('OpenAPIToMCPConverter', () => {
     const workspaceOption = parentRequest.oneOf[2]
     expect(workspaceOption.properties.type.const).toBe('workspace')
   })
+
+  it('wraps top-level array request body parameters in anyOf to also accept JSON-encoded strings', () => {
+    // Reproduces the bug where MCP clients like Claude Code double-serialize array parameters,
+    // sending them as JSON strings (e.g. "[{...}]") instead of actual arrays.
+    // The schema must accept both an array and a string so validation passes.
+    // At runtime, deserializeParams() in proxy.ts converts the string back to an array.
+    // See: https://github.com/makenotion/notion-mcp-server/issues/176
+    const spec: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/pages': {
+          post: {
+            operationId: 'createPages',
+            summary: 'Create multiple pages',
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['pages'],
+                    properties: {
+                      pages: {
+                        type: 'array',
+                        description: 'List of pages to create',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            title: { type: 'string' },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            responses: {
+              '200': {
+                description: 'Pages created',
+                content: {
+                  'application/json': {
+                    schema: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+
+    const converter = new OpenAPIToMCPConverter(spec)
+    const { tools } = converter.convertToMCPTools()
+
+    const createPagesMethod = tools.API.methods.find((m) => m.name === 'createPages')
+    expect(createPagesMethod).toBeDefined()
+
+    const pagesSchema = (createPagesMethod!.inputSchema.properties as any).pages
+    expect(pagesSchema).toBeDefined()
+
+    // The pages property must accept both an array and a JSON-encoded string
+    expect(pagesSchema).toHaveProperty('anyOf')
+    const types = pagesSchema.anyOf.map((s: any) => s.type)
+    expect(types).toContain('array')
+    expect(types).toContain('string')
+
+    // The array variant must also accept string items (for double-serialized elements)
+    const arrayVariant = pagesSchema.anyOf.find((s: any) => s.type === 'array')
+    expect(arrayVariant).toBeDefined()
+    expect(arrayVariant.items).toHaveProperty('anyOf')
+  })
 })
 
 // Additional complex test scenarios as a table test

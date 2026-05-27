@@ -154,26 +154,36 @@ describe('OpenAPI Multipart Form Parser', () => {
         type: 'integer',
       },
       documents: {
-        type: 'array',
-        items: {
-          anyOf: [
-            { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
-        description: expect.stringContaining('max 5 files'),
+        anyOf: [
+          {
+            type: 'array',
+            items: {
+              anyOf: [
+                { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
+            },
+            description: expect.stringContaining('max 5 files'),
+          },
+          { type: 'string' },
+        ],
       },
       tags: {
-        type: 'array',
-        items: {
-          anyOf: [
-            { type: 'string' },
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
-        description: expect.stringContaining('Optional tags'),
+        anyOf: [
+          {
+            type: 'array',
+            items: {
+              anyOf: [
+                { type: 'string' },
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
+            },
+            description: expect.stringContaining('Optional tags'),
+          },
+          { type: 'string' },
+        ],
       },
     })
 
@@ -274,15 +284,20 @@ describe('OpenAPI Multipart Form Parser', () => {
         description: expect.stringContaining('Profile picture (absolute paths to local files)'),
       },
       gallery: {
-        type: 'array',
-        items: {
-          anyOf: [
-            { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
-        description: expect.stringContaining('Additional pet photos'),
+        anyOf: [
+          {
+            type: 'array',
+            items: {
+              anyOf: [
+                { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
+            },
+            description: expect.stringContaining('Additional pet photos'),
+          },
+          { type: 'string' },
+        ],
       },
       details: {
         anyOf: [
@@ -299,21 +314,26 @@ describe('OpenAPI Multipart Form Parser', () => {
         ],
       },
       preferences: {
-        type: 'array',
-        items: {
-          anyOf: [
-            {
-              type: 'object',
-              properties: {
-                category: { type: 'string' },
-                value: { type: 'string' },
-              },
-              additionalProperties: true,
+        anyOf: [
+          {
+            type: 'array',
+            items: {
+              anyOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    category: { type: 'string' },
+                    value: { type: 'string' },
+                  },
+                  additionalProperties: true,
+                },
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
             },
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
+          },
+          { type: 'string' },
+        ],
       },
     })
 
@@ -420,15 +440,20 @@ describe('OpenAPI Multipart Form Parser', () => {
         description: expect.stringContaining('Optional pet certificate (absolute paths to local files)'),
       },
       vaccinations: {
-        type: 'array',
-        items: {
-          anyOf: [
-            { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
-        description: expect.stringContaining('Optional vaccination records'),
+        anyOf: [
+          {
+            type: 'array',
+            items: {
+              anyOf: [
+                { type: 'string', format: 'uri-reference', description: 'absolute paths to local files' },
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
+            },
+            description: expect.stringContaining('Optional vaccination records'),
+          },
+          { type: 'string' },
+        ],
       },
     })
   })

@@ -500,15 +500,24 @@ export class OpenAPIToMCPConverter {
     }
 
     if (schema.type === 'array' && schema.items) {
+      // Also accept the entire array as a JSON-encoded string, consistent with
+      // the object handling above. Some MCP clients (e.g. Claude Code) double-serialize
+      // top-level array parameters, sending them as JSON strings instead of arrays.
+      // deserializeParams() in proxy.ts handles the string→array conversion at runtime.
       return {
-        ...schema,
-        items: {
-          anyOf: [
-            schema.items as IJsonSchema,
-            { type: 'string' },
-            { type: 'object', additionalProperties: true },
-          ],
-        },
+        anyOf: [
+          {
+            ...schema,
+            items: {
+              anyOf: [
+                schema.items as IJsonSchema,
+                { type: 'string' },
+                { type: 'object', additionalProperties: true },
+              ],
+            },
+          },
+          { type: 'string' },
+        ],
       }
     }
 
