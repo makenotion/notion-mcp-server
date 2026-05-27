@@ -9,6 +9,12 @@ import os from 'node:os'
 import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
+import {
+  getDnsRebindingProtectionOptions,
+  getHttpServerDisplayUrl,
+  getUnsafeAuthWarnings,
+  parseServerOptions,
+} from './server-options'
 
 export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
@@ -17,60 +23,7 @@ export async function startServer(args: string[] = process.argv) {
   
   const baseUrl = process.env.BASE_URL ?? undefined
 
-  // Parse command line arguments manually (similar to slack-mcp approach)
-  function parseArgs() {
-    const args = process.argv.slice(2);
-    let transport = 'stdio'; // default
-    let port = 3000;
-    let authToken: string | undefined;
-    let disableAuth = false;
-
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === '--transport' && i + 1 < args.length) {
-        transport = args[i + 1];
-        i++; // skip next argument
-      } else if (args[i] === '--port' && i + 1 < args.length) {
-        port = parseInt(args[i + 1], 10);
-        i++; // skip next argument
-      } else if (args[i] === '--auth-token' && i + 1 < args.length) {
-        authToken = args[i + 1];
-        i++; // skip next argument
-      } else if (args[i] === '--disable-auth') {
-        disableAuth = true;
-      } else if (args[i] === '--help' || args[i] === '-h') {
-        console.log(`
-Usage: notion-mcp-server [options]
-
-Options:
-  --transport <type>     Transport type: 'stdio' or 'http' (default: stdio)
-  --port <number>        Port for HTTP server when using Streamable HTTP transport (default: 3000)
-  --auth-token <token>   Bearer token for HTTP transport authentication (auto-generated if not provided)
-  --disable-auth         Disable bearer token authentication for HTTP transport
-  --help, -h             Show this help message
-
-Environment Variables:
-  NOTION_TOKEN           Notion integration token (recommended)
-  OPENAPI_MCP_HEADERS    JSON string with Notion API headers (alternative)
-  AUTH_TOKEN             Bearer token for HTTP transport authentication (alternative to --auth-token)
-
-Examples:
-  notion-mcp-server                                    # Use stdio transport (default)
-  notion-mcp-server --transport stdio                  # Use stdio transport explicitly
-  notion-mcp-server --transport http                   # Use Streamable HTTP transport on port 3000
-  notion-mcp-server --transport http --port 8080       # Use Streamable HTTP transport on port 8080
-  notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
-  notion-mcp-server --transport http --disable-auth    # Use Streamable HTTP transport without authentication
-  AUTH_TOKEN=mytoken notion-mcp-server --transport http # Use Streamable HTTP transport with auth token from env var
-`);
-        process.exit(0);
-      }
-      // Ignore unrecognized arguments (like command name passed by Docker)
-    }
-
-    return { transport: transport.toLowerCase(), port, authToken, disableAuth };
-  }
-
-  const options = parseArgs()
+  const options = parseServerOptions(args)
   const transport = options.transport
 
   if (transport === 'stdio') {
@@ -86,7 +39,7 @@ Examples:
     // Generate or use provided auth token (from CLI arg or env var) only if auth is enabled
     let authToken: string | undefined
     let authTokenFilePath: string | undefined
-    if (!options.disableAuth) {
+    if (!options.unsafeDisableAuth) {
       authToken = options.authToken || process.env.AUTH_TOKEN || randomBytes(32).toString('hex')
       if (!options.authToken && !process.env.AUTH_TOKEN) {
         // Write auto-generated token to a file with restricted permissions instead of logging it
@@ -139,12 +92,17 @@ Examples:
     })
 
     // Apply authentication to all /mcp routes only if auth is enabled
-    if (!options.disableAuth) {
+    if (!options.unsafeDisableAuth) {
       app.use('/mcp', authenticateToken)
+    } else {
+      for (const warning of getUnsafeAuthWarnings(options)) {
+        console.warn(warning)
+      }
     }
 
     // Map to store transports by session ID
     const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
+    const dnsRebindingProtectionOptions = getDnsRebindingProtectionOptions(options)
 
     // Handle POST requests for client-to-server communication
     app.post('/mcp', async (req, res) => {
@@ -163,7 +121,8 @@ Examples:
             onsessioninitialized: (sessionId) => {
               // Store the transport by session ID
               transports[sessionId] = transport
-            }
+            },
+            ...(dnsRebindingProtectionOptions ?? {}),
           })
 
           // Clean up transport when closed
@@ -230,12 +189,14 @@ Examples:
     })
 
     const port = options.port
-    app.listen(port, '0.0.0.0', async () => {
-      console.log(`MCP Server listening on port ${port}`)
-      console.log(`Endpoint: http://0.0.0.0:${port}/mcp`)
-      console.log(`Health check: http://0.0.0.0:${port}/health`)
-      if (options.disableAuth) {
-        console.log(`Authentication: Disabled`)
+    const serverUrl = getHttpServerDisplayUrl(options)
+    app.listen(port, options.host, async () => {
+      console.log(`MCP Server listening on ${options.host}:${port}`)
+      console.log(`Endpoint: ${serverUrl}/mcp`)
+      console.log(`Health check: ${serverUrl}/health`)
+      if (options.unsafeDisableAuth) {
+        console.log(`Authentication: Disabled (unsafe)`)
+        console.log(`DNS rebinding protection: Enabled`)
       } else {
         console.log(`Authentication: Bearer token required`)
         if (authTokenFilePath) {
