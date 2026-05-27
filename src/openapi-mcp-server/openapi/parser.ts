@@ -278,10 +278,11 @@ export class OpenAPIToMCPConverter {
       $defs: this.convertComponentsToJsonSchema(),
     }
 
-    // Handle parameters (path, query, header, cookie)
+    // Handle parameters (path, query, cookie — skip header params, they're sent automatically)
     if (operation.parameters) {
       for (const param of operation.parameters) {
         const paramObj = this.resolveParameter(param)
+        if (paramObj && paramObj.in === 'header') continue
         if (paramObj && paramObj.schema) {
           const paramSchema = this.convertOpenApiSchemaToJsonSchema(paramObj.schema, new Set())
           // Merge parameter-level description if available
@@ -380,10 +381,11 @@ export class OpenAPIToMCPConverter {
       required: [],
     }
 
-    // Handle parameters (path, query, header, cookie)
+    // Handle parameters (path, query, cookie — skip header params, they're sent automatically)
     if (operation.parameters) {
       for (const param of operation.parameters) {
         const paramObj = this.resolveParameter(param)
+        if (paramObj && paramObj.in === 'header') continue
         if (paramObj && paramObj.schema) {
           const schema = this.convertOpenApiSchemaToJsonSchema(paramObj.schema, new Set(), false)
           // Merge parameter-level description if available
