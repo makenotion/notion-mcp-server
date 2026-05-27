@@ -323,11 +323,14 @@ npx @notionhq/notion-mcp-server --transport http
 # Run on a custom port
 npx @notionhq/notion-mcp-server --transport http --port 8080
 
+# Bind to a different host. The default is 127.0.0.1.
+npx @notionhq/notion-mcp-server --transport http --host 0.0.0.0
+
 # Run with a custom authentication token
 npx @notionhq/notion-mcp-server --transport http --auth-token "your-secret-token"
 ```
 
-When using Streamable HTTP transport, the server will be available at `http://0.0.0.0:<port>/mcp`.
+When using Streamable HTTP transport, the server will be available at `http://127.0.0.1:<port>/mcp` by default.
 
 ##### Authentication
 
@@ -339,11 +342,10 @@ The Streamable HTTP transport requires bearer token authentication for security.
 npx @notionhq/notion-mcp-server --transport http
 ```
 
-The server will generate a secure random token and display it in the console:
+The server will generate a secure random token and write it to a file with restricted permissions:
 
 ```text
-Generated auth token: a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
-Use this token in the Authorization header: Bearer a1b2c3d4e5f6789abcdef0123456789abcdef0123456789abcdef0123456789ab
+Generated auth token written to: /tmp/.notion-mcp-auth-token-12345
 ```
 
 ###### Option 2: Custom token via command line (recommended for production)
@@ -359,6 +361,18 @@ AUTH_TOKEN="your-secret-token" npx @notionhq/notion-mcp-server --transport http
 ```
 
 The command line argument `--auth-token` takes precedence over the `AUTH_TOKEN` environment variable if both are provided.
+
+###### Unsafe option: disable HTTP authentication
+
+You can disable bearer token authentication only with the explicit unsafe flag:
+
+```bash
+npx @notionhq/notion-mcp-server --transport http --unsafe-disable-auth
+```
+
+WARNING: `--unsafe-disable-auth` is unsafe. The server may be reachable to pages you visit via DNS rebinding. Only use it on an isolated network.
+
+When authentication is disabled, the server enables DNS rebinding protection by checking the `Host` and `Origin` headers against the configured local host and loopback hosts. The previous `--disable-auth` flag is still accepted as a deprecated alias, but it will print a warning.
 
 ##### Making HTTP requests
 
