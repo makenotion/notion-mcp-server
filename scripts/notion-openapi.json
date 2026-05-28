@@ -2212,6 +2212,372 @@
         "deprecated": false,
         "security": []
       }
+    },
+    "/v1/file_uploads": {
+      "post": {
+        "summary": "Create a file upload",
+        "description": "Creates a file upload session. Use the returned file upload id with the send endpoint to upload file content. After uploading, reference the file upload id in page properties, blocks, or other Notion objects using type 'file_upload'.",
+        "operationId": "create-a-file-upload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["single_part", "multi_part", "external_url"],
+                    "description": "The upload mode. Use 'single_part' for files under 20MB (default), 'multi_part' for larger files, or 'external_url' to import from a public URL."
+                  },
+                  "filename": {
+                    "type": "string",
+                    "description": "The name of the file being uploaded. Required for multi_part mode. Max 900 bytes including extension."
+                  },
+                  "content_type": {
+                    "type": "string",
+                    "description": "The MIME type of the file (e.g., 'image/png', 'application/pdf'). Recommended for multi_part uploads."
+                  },
+                  "number_of_parts": {
+                    "type": "integer",
+                    "description": "Number of parts for multi_part uploads. Range: 1-10000."
+                  },
+                  "external_url": {
+                    "type": "string",
+                    "description": "A publicly accessible HTTPS URL to import. Use with mode 'external_url'."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      },
+      "get": {
+        "summary": "List file uploads",
+        "description": "Retrieves file uploads for the current bot integration, sorted by most recent first.",
+        "operationId": "list-file-uploads",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status: 'pending', 'uploaded', 'expired', or 'failed'.",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "uploaded", "expired", "failed"]
+            }
+          },
+          {
+            "name": "start_cursor",
+            "in": "query",
+            "description": "Pagination cursor to start after.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Number of items to return (1-100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/file_uploads/{file_upload_id}": {
+      "get": {
+        "summary": "Retrieve a file upload",
+        "description": "Retrieves the details of a file upload object.",
+        "operationId": "retrieve-a-file-upload",
+        "parameters": [
+          {
+            "name": "file_upload_id",
+            "in": "path",
+            "description": "Identifier for a Notion file upload object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/file_uploads/{file_upload_id}/send": {
+      "post": {
+        "summary": "Send file upload content",
+        "description": "Sends file content for an existing file upload session. The 'file' parameter accepts an absolute path to a local file. For multi_part uploads, include the part_number parameter.",
+        "operationId": "send-file-upload-content",
+        "parameters": [
+          {
+            "name": "file_upload_id",
+            "in": "path",
+            "description": "Identifier for a Notion file upload object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  },
+                  "part_number": {
+                    "type": "integer",
+                    "description": "Part number for multi_part uploads (1-1000)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/file_uploads/{file_upload_id}/complete": {
+      "post": {
+        "summary": "Complete a file upload",
+        "description": "Finalizes a multi_part file upload after all parts have been sent.",
+        "operationId": "complete-a-file-upload",
+        "parameters": [
+          {
+            "name": "file_upload_id",
+            "in": "path",
+            "description": "Identifier for a Notion file upload object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
     }
   }
 }
