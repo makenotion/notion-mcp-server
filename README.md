@@ -1,8 +1,10 @@
 # Notion MCP Server
 
-> [!NOTE]
+> **Model Context Protocol (MCP) server for Notion API** — Create pages, query databases, and automate your Notion workspace with AI agents like Claude and Cursor.
+
+[!NOTE]
 >
-> We’ve introduced **Notion MCP**, a remote MCP server with the following improvements:
+> We've introduced **Notion MCP**, a remote MCP server with the following improvements:
 >
 > - Easy installation via standard OAuth. No need to fiddle with JSON or API tokens anymore.
 > - Powerful tools tailored to AI agents, including editing pages in Markdown. These tools are designed with optimized token consumption in mind.
@@ -18,6 +20,52 @@
 ![notion-mcp-sm](https://github.com/user-attachments/assets/6c07003c-8455-4636-b298-d60ffdf46cd8)
 
 This project implements an [MCP server](https://spec.modelcontextprotocol.io/) for the [Notion API](https://developers.notion.com/reference/intro).
+
+---
+
+## 🔧 Bugfixes & Improvements
+
+This fork includes critical fixes for creating pages and improved MCP client compatibility:
+
+### Fixed: Page Creation with Complex Parameters
+
+**Problem:** MCP clients encountered schema validation errors when creating pages with complex object parameters like `parent`, `data`, or `new_parent`.
+
+**Error:** `Expected object, received string`
+
+**Solution:** Enhanced JSON Schema generation to add `type: "object"` hints for `oneOf`, `anyOf`, and `allOf` schemas, improving compatibility with MCP clients like Claude Desktop and Cursor.
+
+**Related Issue:** [#209](https://github.com/makenotion/notion-mcp-server/issues/209)
+
+### Example: Creating a Page in a Database
+
+```typescript
+// This now works correctly with all MCP clients
+{
+  parent: { database_id: "22e62872401d40719322df561f78460a" },
+  properties: {
+    Name: {
+      title: [{ text: { content: "My New Page" } }]
+    }
+  }
+}
+```
+
+### Comparison with Official Repository
+
+| Feature | Official MCP | This Fork |
+|---------|-------------|-----------|
+| Create pages | ❌ Schema validation errors | ✅ Fully working |
+| Complex parameters | ⚠️ Requires workarounds | ✅ Native support |
+| oneOf/anyOf/allOf | ⚠️ Missing type hints | ✅ Type hints added |
+| MCP client compatibility | ⚠️ Limited | ✅ Improved |
+
+**Why use this fork?**
+
+- ✅ Fixes critical bugs blocking page creation
+- ✅ Better compatibility with MCP clients (Claude Desktop, Cursor, etc.)
+- ✅ Actively maintained for bugfixes
+- ✅ Backward compatible with existing integrations
 
 ![mcp-demo](https://github.com/user-attachments/assets/e3ff90a7-7801-48a9-b807-f7dd47f0d3d6)
 

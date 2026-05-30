@@ -157,12 +157,62 @@ export class OpenAPIToMCPConverter {
     // oneOf, anyOf, allOf
     if (schema.oneOf) {
       result.oneOf = schema.oneOf.map((s) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs))
+      // If all options in oneOf are objects, add type: object to help MCP clients serialize correctly
+      // This fixes the "Expected object, received string" error for parameters like parent, data, new_parent
+      // See: https://github.com/makenotion/notion-mcp-server/issues/209
+      const allOptionsAreObjects = result.oneOf.every((option) => {
+        const opt = option as IJsonSchema
+        // Check if it's an object type or has properties
+        if (opt.type === 'object' || opt.properties !== undefined) {
+          return true
+        }
+        // Check if it's a $ref that resolves to an object (check the $ref path)
+        if (opt.$ref) {
+          // $refs to #/$defs/ are objects if they end with common object schema names
+          const refPath = opt.$ref.replace('#/$defs/', '')
+          return refPath.includes('Request') || refPath.includes('Response') || refPath.includes('Object')
+        }
+        return false
+      })
+      if (allOptionsAreObjects) {
+        result.type = 'object'
+      }
     }
     if (schema.anyOf) {
       result.anyOf = schema.anyOf.map((s) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs))
+      // If all options in anyOf are objects, add type: object
+      const allOptionsAreObjects = result.anyOf.every((option) => {
+        const opt = option as IJsonSchema
+        if (opt.type === 'object' || opt.properties !== undefined) {
+          return true
+        }
+        if (opt.$ref) {
+          const refPath = opt.$ref.replace('#/$defs/', '')
+          return refPath.includes('Request') || refPath.includes('Response') || refPath.includes('Object')
+        }
+        return false
+      })
+      if (allOptionsAreObjects) {
+        result.type = 'object'
+      }
     }
     if (schema.allOf) {
       result.allOf = schema.allOf.map((s) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs))
+      // If all options in allOf are objects, add type: object
+      const allOptionsAreObjects = result.allOf.every((option) => {
+        const opt = option as IJsonSchema
+        if (opt.type === 'object' || opt.properties !== undefined) {
+          return true
+        }
+        if (opt.$ref) {
+          const refPath = opt.$ref.replace('#/$defs/', '')
+          return refPath.includes('Request') || refPath.includes('Response') || refPath.includes('Object')
+        }
+        return false
+      })
+      if (allOptionsAreObjects) {
+        result.type = 'object'
+      }
     }
 
     return result
