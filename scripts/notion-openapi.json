@@ -1243,7 +1243,7 @@
                     "type": "array",
                     "description": "The content to be rendered on the new page, represented as an array of [block objects](https://developers.notion.com/reference/block).",
                     "items": {
-                      "type": "string"
+                      "$ref": "#/components/schemas/blockObjectRequest"
                     }
                   },
                   "icon": {

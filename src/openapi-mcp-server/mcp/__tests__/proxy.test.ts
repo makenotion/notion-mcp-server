@@ -793,5 +793,55 @@ describe('MCPProxy', () => {
         },
       )
     })
+
+    it('should deserialize an entire children array sent as a JSON string (issue #82)', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-createPage': {
+          operationId: 'createPage',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/pages',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // Simulates the bug from issue #82: the entire children array is stringified
+      const childrenAsString = JSON.stringify([
+        { type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Test' } }] } },
+      ])
+      const parentAsString = JSON.stringify({ database_id: 'example-database-id' })
+
+      await callToolHandler({
+        params: {
+          name: 'API-createPage',
+          arguments: {
+            parent: parentAsString,
+            children: childrenAsString,
+            properties: { title: 'Test Page' },
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          parent: { database_id: 'example-database-id' },
+          children: [
+            { type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Test' } }] } },
+          ],
+          properties: { title: 'Test Page' },
+        },
+      )
+    })
   })
 })

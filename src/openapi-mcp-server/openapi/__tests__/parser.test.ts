@@ -1545,3 +1545,154 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
     expect(openApiLookup).toEqual(expected.openApiLookup)
   })
 })
+
+describe('Array items with $ref are preserved through schema conversion (issue #82)', () => {
+  const specWithBlockRef: OpenAPIV3.Document = {
+    openapi: '3.0.0',
+    info: { title: 'Test API', version: '1.0.0' },
+    components: {
+      schemas: {
+        blockObjectRequest: {
+          anyOf: [
+            { $ref: '#/components/schemas/paragraphBlockRequest' },
+            { $ref: '#/components/schemas/headingBlockRequest' },
+          ],
+        },
+        paragraphBlockRequest: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['paragraph'] },
+            paragraph: {
+              type: 'object',
+              properties: {
+                rich_text: { type: 'array', items: { type: 'object', additionalProperties: true } },
+              },
+            },
+          },
+        },
+        headingBlockRequest: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['heading_1'] },
+            heading_1: {
+              type: 'object',
+              properties: {
+                rich_text: { type: 'array', items: { type: 'object', additionalProperties: true } },
+              },
+            },
+          },
+        },
+      },
+    },
+    paths: {
+      '/pages': {
+        post: {
+          operationId: 'createPage',
+          summary: 'Create a page',
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['parent', 'properties'],
+                  properties: {
+                    parent: { type: 'object', additionalProperties: true },
+                    properties: { type: 'object', additionalProperties: true },
+                    children: {
+                      type: 'array',
+                      description: 'Content blocks',
+                      items: { $ref: '#/components/schemas/blockObjectRequest' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: { '200': { description: 'Created' } },
+        },
+      },
+      '/blocks/{block_id}/children': {
+        patch: {
+          operationId: 'appendBlockChildren',
+          summary: 'Append block children',
+          parameters: [
+            { name: 'block_id', in: 'path', required: true, schema: { type: 'string' } },
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['children'],
+                  properties: {
+                    children: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/blockObjectRequest' },
+                      description: 'Child content blocks',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: { '200': { description: 'Success' } },
+        },
+      },
+    },
+  }
+
+  it('both createPage and appendBlockChildren should have matching children schema structure', () => {
+    const converter = new OpenAPIToMCPConverter(specWithBlockRef)
+    const { tools } = converter.convertToMCPTools()
+
+    const createPage = tools.API.methods.find(m => m.name === 'createPage')
+    const appendBlockChildren = tools.API.methods.find(m => m.name === 'appendBlockChildren')
+    expect(createPage).toBeDefined()
+    expect(appendBlockChildren).toBeDefined()
+
+    // Both children properties should have the same items schema structure
+    const createPageChildren = createPage!.inputSchema.properties!.children as IJsonSchema
+    const appendChildren = appendBlockChildren!.inputSchema.properties!.children as IJsonSchema
+
+    // The items should reference blockObjectRequest via $defs, not degrade to {type: "string"}
+    expect(createPageChildren).toHaveProperty('items')
+    expect(appendChildren).toHaveProperty('items')
+
+    // Extract the effective items schema (unwrapping the anyOf string fallback)
+    const getEffectiveItems = (schema: IJsonSchema): IJsonSchema => {
+      // withStringFallback wraps array items in anyOf: [original, {type: "string"}, {type: "object"}]
+      const items = schema.items as IJsonSchema
+      if (items && 'anyOf' in items && Array.isArray(items.anyOf)) {
+        return items.anyOf[0] as IJsonSchema
+      }
+      return items
+    }
+
+    const createItems = getEffectiveItems(createPageChildren)
+    const appendItems = getEffectiveItems(appendChildren)
+
+    // Both should reference blockObjectRequest (not be {type: "string"})
+    expect(createItems).toHaveProperty('$ref')
+    expect(appendItems).toHaveProperty('$ref')
+    expect((createItems as any).$ref).toBe((appendItems as any).$ref)
+  })
+
+  it('children items should not be typed as plain string', () => {
+    const converter = new OpenAPIToMCPConverter(specWithBlockRef)
+    const { tools } = converter.convertToMCPTools()
+
+    const createPage = tools.API.methods.find(m => m.name === 'createPage')
+    expect(createPage).toBeDefined()
+
+    const children = createPage!.inputSchema.properties!.children as IJsonSchema
+    const items = children.items as IJsonSchema
+
+    // Items should not be {type: "string"} -- that was the bug
+    if ('anyOf' in items && Array.isArray(items.anyOf)) {
+      // The primary schema (first element) should not be {type: "string"}
+      expect(items.anyOf[0]).not.toEqual({ type: 'string' })
+    } else {
+      expect(items).not.toEqual({ type: 'string' })
+    }
+  })
+})
