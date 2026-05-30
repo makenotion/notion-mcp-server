@@ -184,6 +184,28 @@ Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json
 
 For more information, see the [Copilot CLI documentation](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli).
 
+###### Kiro
+
+[![Add to Kiro](https://kiro.dev/images/add-to-kiro.svg)](https://kiro.dev/launch/mcp/add?name=notionApi&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40notionhq%2Fnotion-mcp-server%22%5D%2C%22env%22%3A%7B%22NOTION_TOKEN%22%3A%22ntn_%2A%2A%2A%2A%22%7D%7D)
+
+Or manually add the following to your `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+For more information, see the [Kiro MCP documentation](https://kiro.dev/docs/mcp/).
+
 ##### Using Docker
 
 There are two options for running the MCP server with Docker:
