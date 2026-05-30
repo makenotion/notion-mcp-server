@@ -121,6 +121,30 @@ Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (Ma
 }
 ```
 
+Optional local guardrail with [Armorer Guard](https://github.com/ArmorerLabs/Armorer-Guard):
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "armorer-guard",
+      "args": [
+        "mcp-proxy",
+        "--",
+        "npx",
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+This wraps the same Notion MCP server with a local proxy that inspects tool-call arguments for prompt injection, credential leakage, exfiltration risk, and dangerous actions before forwarding safe calls to Notion.
+
 ###### Option 2: Using OPENAPI_MCP_HEADERS (for advanced use cases)
 
 ```json
