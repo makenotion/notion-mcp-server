@@ -19,6 +19,12 @@
   "bin": {
     "notion-mcp-server": "bin/cli.mjs"
   },
+  "files": [
+    "bin",
+    "scripts/notion-openapi.json",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "axios": "^1.8.4",
