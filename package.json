@@ -51,6 +51,7 @@
   },
   "description": "Official MCP server for Notion API",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/makenotion/notion-mcp-server.git"
