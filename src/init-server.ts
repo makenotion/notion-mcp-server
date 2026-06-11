@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { OpenAPIV3 } from 'openapi-types'
 import OpenAPISchemaValidator from 'openapi-schema-validator'
@@ -42,9 +43,24 @@ async function loadOpenApiSpec(specPath: string, baseUrl: string | undefined): P
   }
 }
 
+function loadPackageVersion(): string {
+  const packageJsonPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json')
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
+    if (typeof parsed.version === 'string') {
+      return parsed.version
+    }
+  } catch (error) {
+    console.warn('Failed to read package version:', (error as Error).message)
+  }
+
+  return '1.0.0'
+}
+
 export async function initProxy(specPath: string, baseUrl: string |undefined) {
   const openApiSpec = await loadOpenApiSpec(specPath, baseUrl)
-  const proxy = new MCPProxy('Notion API', openApiSpec)
+  const proxy = new MCPProxy('Notion API', openApiSpec, loadPackageVersion())
 
   return proxy
 }
