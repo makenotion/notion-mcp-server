@@ -1,6 +1,7 @@
 import { MCPProxy } from '../proxy'
 import { OpenAPIV3 } from 'openapi-types'
 import { HttpClient } from '../../client/http-client'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
@@ -39,6 +40,17 @@ describe('MCPProxy', () => {
     }
 
     proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+  })
+
+  it('should pass the configured server version to the MCP SDK server', () => {
+    vi.clearAllMocks()
+
+    proxy = new MCPProxy('test-proxy', mockOpenApiSpec, '2.3.1')
+
+    expect(Server).toHaveBeenCalledWith(
+      { name: 'test-proxy', version: '2.3.1' },
+      { capabilities: { tools: {} } },
+    )
   })
 
   describe('listTools handler', () => {
