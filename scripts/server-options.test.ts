@@ -5,6 +5,7 @@ import {
   getDnsRebindingProtectionOptions,
   getHttpServerDisplayUrl,
   getUnsafeAuthWarnings,
+  getVersionText,
   parseServerOptions,
 } from './server-options'
 
@@ -100,5 +101,15 @@ describe('server options', () => {
       'WARNING: --unsafe-disable-auth disables bearer token authentication. A malicious website may be able to reach this server via DNS rebinding. Only use this on an isolated network.',
       'WARNING: unauthenticated HTTP is bound to 0.0.0.0. Prefer the default 127.0.0.1 loopback binding unless this is an isolated network.',
     ])
+  })
+
+  it('exposes the package version for the CLI version flag', () => {
+    expect(getVersionText()).toBe('2.3.1')
+  })
+
+  it('rejects unknown top-level flags', () => {
+    expect(() => parseServerOptions([...argv, '--definitely-not-a-real-flag'])).toThrow(
+      'Unknown option: --definitely-not-a-real-flag',
+    )
   })
 })
