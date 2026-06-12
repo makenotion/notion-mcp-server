@@ -1,4 +1,5 @@
 import type { StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import packageJson from '../package.json'
 
 export const DEFAULT_HTTP_HOST = '127.0.0.1'
 
@@ -46,6 +47,11 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(getHelpText())
       process.exit(0)
+    } else if (args[i] === '--version' || args[i] === '-v') {
+      console.log(getVersionText())
+      process.exit(0)
+    } else if (args[i].startsWith('-')) {
+      throw new Error(`Unknown option: ${args[i]}`)
     }
     // Ignore unrecognized arguments (like command name passed by Docker)
   }
@@ -71,6 +77,7 @@ Options:
   --auth-token <token>     Bearer token for HTTP transport authentication (auto-generated if not provided)
   --unsafe-disable-auth    Disable bearer token authentication for HTTP transport. Unsafe; use only on isolated networks.
   --disable-auth           Deprecated alias for --unsafe-disable-auth
+  --version, -v            Show the package version
   --help, -h               Show this help message
 
 Environment Variables:
@@ -88,6 +95,10 @@ Examples:
   notion-mcp-server --transport http --unsafe-disable-auth # Use Streamable HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http  # Use Streamable HTTP transport with auth token from env var
 `
+}
+
+export function getVersionText(): string {
+  return packageJson.version
 }
 
 export function getUnsafeAuthWarnings(options: ServerOptions): string[] {

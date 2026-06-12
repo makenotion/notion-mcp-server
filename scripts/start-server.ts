@@ -236,6 +236,9 @@ startServer(process.argv).catch(error => {
   if (error instanceof ValidationError) {
     console.error('Invalid OpenAPI 3.1 specification:')
     error.errors.forEach(err => console.error(err))
+  } else if (error instanceof Error && error.message.startsWith('Unknown option:')) {
+    console.error(error.message)
+    console.error('Run notion-mcp-server --help for usage.')
   } else {
     console.error('Error:', error)
   }
