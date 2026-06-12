@@ -1,4 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import packageJson from '../../package.json' assert { type: 'json' };
 import { CallToolRequestSchema, JSONRPCResponse, ListToolsRequestSchema, Tool } from '@modelcontextprotocol/sdk/types.js'
 import { JSONSchema7 as IJsonSchema } from 'json-schema'
 import { OpenAPIToMCPConverter } from '../openapi/parser'
@@ -91,7 +92,7 @@ export class MCPProxy {
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
 
   constructor(name: string, openApiSpec: OpenAPIV3.Document) {
-    this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
+    this.server = new Server({ name, version: packageJson.version }, { capabilities: { tools: {} } })
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
       throw new Error('No base URL found in OpenAPI spec')
