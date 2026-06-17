@@ -9,6 +9,7 @@ export type ServerOptions = {
   authToken: string | undefined
   unsafeDisableAuth: boolean
   usedDeprecatedDisableAuthFlag: boolean
+  enableTokenPassthrough: boolean
 }
 
 type DnsRebindingProtectionOptions = Pick<
@@ -24,6 +25,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
   let authToken: string | undefined
   let unsafeDisableAuth = false
   let usedDeprecatedDisableAuthFlag = false
+  let enableTokenPassthrough = process.env.ENABLE_TOKEN_PASSTHROUGH === 'true'
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--transport' && i + 1 < args.length) {
@@ -43,6 +45,8 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     } else if (args[i] === '--disable-auth') {
       unsafeDisableAuth = true
       usedDeprecatedDisableAuthFlag = true
+    } else if (args[i] === '--enable-token-passthrough') {
+      enableTokenPassthrough = true
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(getHelpText())
       process.exit(0)
@@ -57,6 +61,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     authToken,
     unsafeDisableAuth,
     usedDeprecatedDisableAuthFlag,
+    enableTokenPassthrough,
   }
 }
 
@@ -71,12 +76,16 @@ Options:
   --auth-token <token>     Bearer token for HTTP transport authentication (auto-generated if not provided)
   --unsafe-disable-auth    Disable bearer token authentication for HTTP transport. Unsafe; use only on isolated networks.
   --disable-auth           Deprecated alias for --unsafe-disable-auth
+  --enable-token-passthrough  Let each HTTP client supply its own Notion token per request
+                              via the 'Notion-Token' header, so one deployment can serve
+                              multiple Notion integrations (default: off).
   --help, -h               Show this help message
 
 Environment Variables:
   NOTION_TOKEN             Notion integration token (recommended)
   OPENAPI_MCP_HEADERS      JSON string with Notion API headers (alternative)
   AUTH_TOKEN               Bearer token for HTTP transport authentication (alternative to --auth-token)
+  ENABLE_TOKEN_PASSTHROUGH Set to 'true' to enable per-request Notion tokens (alternative to --enable-token-passthrough)
 
 Examples:
   notion-mcp-server                                      # Use stdio transport (default)
@@ -87,6 +96,7 @@ Examples:
   notion-mcp-server --transport http --auth-token mytoken # Use Streamable HTTP transport with custom auth token
   notion-mcp-server --transport http --unsafe-disable-auth # Use Streamable HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http  # Use Streamable HTTP transport with auth token from env var
+  notion-mcp-server --transport http --enable-token-passthrough # Per-request Notion token via the Notion-Token header
 `
 }
 

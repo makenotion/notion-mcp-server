@@ -400,6 +400,51 @@ curl -H "Authorization: Bearer your-token-here" \
 
 **Note:** Make sure to set either the `NOTION_TOKEN` environment variable (recommended) or the `OPENAPI_MCP_HEADERS` environment variable with your Notion integration token when using either transport mode.
 
+##### Serving multiple integrations (per-request token passthrough)
+
+By default the server authenticates to Notion with a single token baked in at
+startup, which locks one deployment to one Notion integration. To let a single
+deployment serve **multiple** integrations, enable token passthrough so each
+client supplies its own Notion integration token per connection:
+
+```bash
+# Enable per-request Notion tokens (flag or ENABLE_TOKEN_PASSTHROUGH=true)
+npx @notionhq/notion-mcp-server --transport http --enable-token-passthrough
+```
+
+Clients then send their Notion token on the **initialize** request using the
+dedicated `Notion-Token` header:
+
+```bash
+curl -H "Authorization: Bearer <server-auth-token>" \
+     -H "Notion-Token: ntn_****" \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' \
+     http://localhost:3000/mcp
+```
+
+How the token is resolved for each connection, in order:
+
+1. The `Notion-Token` header (preferred — unambiguous, and works alongside the
+   server's own `Authorization` gateway auth). If present it must be a valid
+   Notion token, otherwise the request is rejected with `401`.
+2. `Authorization: Bearer ntn_****` — only when the server's own bearer auth is
+   turned off (`--unsafe-disable-auth`), so the header is free to carry the
+   Notion token directly.
+3. Otherwise the startup env token (`NOTION_TOKEN` / `OPENAPI_MCP_HEADERS`), if
+   set, so passthrough and a default integration can coexist on one deployment.
+
+Notes:
+
+- Only values with a Notion token prefix (`ntn_`, legacy `secret_`) are treated
+  as Notion tokens, so the server's gateway secret and a tenant's Notion token
+  never collide.
+- Each token is bound to its MCP session; tokens are never logged (only a
+  redacted prefix is emitted).
+- This is a deliberate token-passthrough setup. Always deploy it over TLS, and
+  prefer keeping the server's own bearer auth (`--auth-token`) enabled as a
+  gateway in front of multi-tenant traffic.
+
 ### Examples
 
 1. Using the following instruction

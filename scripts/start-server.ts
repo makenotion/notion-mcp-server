@@ -10,6 +10,12 @@ import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
 import {
+  NOTION_TOKEN_HEADER,
+  notionHeadersForToken,
+  redactToken,
+  resolveNotionToken,
+} from '../src/openapi-mcp-server/mcp/token'
+import {
   getDnsRebindingProtectionOptions,
   getHttpServerDisplayUrl,
   getUnsafeAuthWarnings,
@@ -100,6 +106,12 @@ export async function startServer(args: string[] = process.argv) {
       }
     }
 
+    // Per-request Notion token passthrough lets one deployment serve multiple
+    // Notion integrations: each connection brings its own token via a header
+    // instead of everyone sharing the startup env token.
+    const enableTokenPassthrough = options.enableTokenPassthrough
+    const hasEnvNotionToken = Boolean(process.env.NOTION_TOKEN || process.env.OPENAPI_MCP_HEADERS)
+
     // Map to store transports by session ID
     const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
     const dnsRebindingProtectionOptions = getDnsRebindingProtectionOptions(options)
@@ -115,6 +127,42 @@ export async function startServer(args: string[] = process.argv) {
           // Reuse existing transport
           transport = transports[sessionId]
         } else if (!sessionId && isInitializeRequest(req.body)) {
+          // Resolve which Notion token this connection should authenticate with.
+          // When passthrough is off we leave this undefined so the proxy uses the
+          // startup env token (the original, single-integration behavior).
+          let perRequestHeaders: Record<string, string> | undefined
+          if (enableTokenPassthrough) {
+            const resolution = resolveNotionToken(req.headers, {
+              // Only mine the Authorization header for a Notion token when it
+              // isn't already reserved for the server's own gateway auth.
+              allowAuthorizationFallback: options.unsafeDisableAuth,
+            })
+            if (resolution.status === 'invalid') {
+              res.status(401).json({
+                jsonrpc: '2.0',
+                error: { code: -32001, message: `Unauthorized: ${resolution.reason}` },
+                id: null,
+              })
+              return
+            }
+            if (resolution.status === 'ok') {
+              perRequestHeaders = notionHeadersForToken(resolution.token)
+              console.log(`Initializing session with per-request Notion token ${redactToken(resolution.token)}`)
+            } else if (!hasEnvNotionToken) {
+              // Passthrough is on, no token was supplied, and there is no env
+              // token to fall back to — fail clearly instead of 401-ing later.
+              res.status(401).json({
+                jsonrpc: '2.0',
+                error: {
+                  code: -32001,
+                  message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header.`,
+                },
+                id: null,
+              })
+              return
+            }
+          }
+
           // New initialization request
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -132,7 +180,7 @@ export async function startServer(args: string[] = process.argv) {
             }
           }
 
-          const proxy = await initProxy(specPath, baseUrl)
+          const proxy = await initProxy(specPath, baseUrl, perRequestHeaders)
           await proxy.connect(transport)
         } else {
           // Invalid request
@@ -202,6 +250,11 @@ export async function startServer(args: string[] = process.argv) {
         if (authTokenFilePath) {
           console.log(`Read your auth token from: ${authTokenFilePath}`)
         }
+      }
+      if (enableTokenPassthrough) {
+        console.log(
+          `Notion token passthrough: Enabled (clients may send their own token via the '${NOTION_TOKEN_HEADER}' header)`,
+        )
       }
       // Try to resolve the Notion integration link so users can manage their token
       const notionToken = process.env.NOTION_TOKEN

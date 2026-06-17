@@ -324,6 +324,47 @@ describe('MCPProxy', () => {
       )
     })
   })
+  describe('explicit headers (per-request token passthrough)', () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    it('uses explicit headers instead of the environment when provided', () => {
+      process.env.NOTION_TOKEN = 'ntn_env_token_should_be_ignored'
+
+      const headers = {
+        Authorization: 'Bearer ntn_per_request_token',
+        'Notion-Version': '2025-09-03',
+      }
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec, headers)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({ headers }),
+        expect.anything(),
+      )
+    })
+
+    it('falls back to the environment when headers are omitted', () => {
+      process.env.NOTION_TOKEN = 'ntn_env_token_123'
+      delete process.env.OPENAPI_MCP_HEADERS
+
+      const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      expect(HttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            Authorization: 'Bearer ntn_env_token_123',
+          },
+        }),
+        expect.anything(),
+      )
+    })
+  })
+
   describe('connect', () => {
     it('should connect to transport', async () => {
       const mockTransport = {} as Transport

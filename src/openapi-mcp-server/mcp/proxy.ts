@@ -90,7 +90,13 @@ export class MCPProxy {
   private tools: Record<string, NewToolDefinition>
   private openApiLookup: Record<string, OpenAPIV3.OperationObject & { method: string; path: string }>
 
-  constructor(name: string, openApiSpec: OpenAPIV3.Document) {
+  /**
+   * @param headers Notion API headers to authenticate with. When omitted, the
+   *   headers are resolved from the environment (`OPENAPI_MCP_HEADERS` /
+   *   `NOTION_TOKEN`). The HTTP transport passes per-connection headers here so a
+   *   single deployment can serve multiple Notion integrations.
+   */
+  constructor(name: string, openApiSpec: OpenAPIV3.Document, headers?: Record<string, string>) {
     this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
@@ -99,7 +105,7 @@ export class MCPProxy {
     this.httpClient = new HttpClient(
       {
         baseUrl,
-        headers: this.parseHeadersFromEnv(),
+        headers: headers ?? this.parseHeadersFromEnv(),
       },
       openApiSpec,
     )
