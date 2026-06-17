@@ -1,20 +1,11 @@
 import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
 import type { JSONSchema7 as IJsonSchema } from 'json-schema'
-import type { ChatCompletionTool } from 'openai/resources/chat/completions'
-import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages'
 
 type NewToolMethod = {
   name: string
   description: string
   inputSchema: IJsonSchema & { type: 'object' }
   returnSchema?: IJsonSchema
-}
-
-type FunctionParameters = {
-  type: 'object'
-  properties?: Record<string, unknown>
-  required?: string[]
-  [key: string]: unknown
 }
 
 export class OpenAPIToMCPConverter {
@@ -202,59 +193,6 @@ export class OpenAPIToMCPConverter {
     return { tools, openApiLookup, zip }
   }
 
-  /**
-   * Convert the OpenAPI spec to OpenAI's ChatCompletionTool format
-   */
-  convertToOpenAITools(): ChatCompletionTool[] {
-    const tools: ChatCompletionTool[] = []
-
-    for (const [path, pathItem] of Object.entries(this.openApiSpec.paths || {})) {
-      if (!pathItem) continue
-
-      for (const [method, operation] of Object.entries(pathItem)) {
-        if (!this.isOperation(method, operation)) continue
-
-        const parameters = this.convertOperationToJsonSchema(operation, method, path)
-        const tool: ChatCompletionTool = {
-          type: 'function',
-          function: {
-            name: operation.operationId!,
-            description: this.getDescription(operation.summary || operation.description || ''),
-            parameters: parameters as FunctionParameters,
-          },
-        }
-        tools.push(tool)
-      }
-    }
-
-    return tools
-  }
-
-  /**
-   * Convert the OpenAPI spec to Anthropic's Tool format
-   */
-  convertToAnthropicTools(): Tool[] {
-    const tools: Tool[] = []
-
-    for (const [path, pathItem] of Object.entries(this.openApiSpec.paths || {})) {
-      if (!pathItem) continue
-
-      for (const [method, operation] of Object.entries(pathItem)) {
-        if (!this.isOperation(method, operation)) continue
-
-        const parameters = this.convertOperationToJsonSchema(operation, method, path)
-        const tool: Tool = {
-          name: operation.operationId!,
-          description: this.getDescription(operation.summary || operation.description || ''),
-          input_schema: parameters as Tool['input_schema'],
-        }
-        tools.push(tool)
-      }
-    }
-
-    return tools
-  }
-
   private convertComponentsToJsonSchema(): Record<string, IJsonSchema> {
     const components = this.openApiSpec.components || {}
     const schema: Record<string, IJsonSchema> = {}
@@ -263,60 +201,6 @@ export class OpenAPIToMCPConverter {
     }
     return schema
   }
-  /**
-   * Helper method to convert an operation to a JSON Schema for parameters
-   */
-  private convertOperationToJsonSchema(
-    operation: OpenAPIV3.OperationObject,
-    method: string,
-    path: string,
-  ): IJsonSchema & { type: 'object' } {
-    const schema: IJsonSchema & { type: 'object' } = {
-      type: 'object',
-      properties: {},
-      required: [],
-      $defs: this.convertComponentsToJsonSchema(),
-    }
-
-    // Handle parameters (path, query, header, cookie)
-    if (operation.parameters) {
-      for (const param of operation.parameters) {
-        const paramObj = this.resolveParameter(param)
-        if (paramObj && paramObj.schema) {
-          const paramSchema = this.convertOpenApiSchemaToJsonSchema(paramObj.schema, new Set())
-          // Merge parameter-level description if available
-          if (paramObj.description) {
-            paramSchema.description = paramObj.description
-          }
-          schema.properties![paramObj.name] = paramSchema
-          if (paramObj.required) {
-            schema.required!.push(paramObj.name)
-          }
-        }
-      }
-    }
-
-    // Handle requestBody
-    if (operation.requestBody) {
-      const bodyObj = this.resolveRequestBody(operation.requestBody)
-      if (bodyObj?.content) {
-        if (bodyObj.content['application/json']?.schema) {
-          const bodySchema = this.convertOpenApiSchemaToJsonSchema(bodyObj.content['application/json'].schema, new Set())
-          if (bodySchema.type === 'object' && bodySchema.properties) {
-            for (const [name, propSchema] of Object.entries(bodySchema.properties)) {
-              schema.properties![name] = propSchema
-            }
-            if (bodySchema.required) {
-              schema.required!.push(...bodySchema.required)
-            }
-          }
-        }
-      }
-    }
-
-    return schema
-  }
-
   private isOperation(method: string, operation: any): operation is OpenAPIV3.OperationObject {
     return ['get', 'post', 'put', 'delete', 'patch'].includes(method.toLowerCase())
   }

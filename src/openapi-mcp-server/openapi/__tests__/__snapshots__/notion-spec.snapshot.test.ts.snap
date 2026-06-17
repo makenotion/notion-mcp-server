@@ -1,0 +1,381 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Notion OpenAPI spec -> MCP tools (snapshot) > generates a stable set of tool names 1`] = `
+[
+  "create-a-comment",
+  "create-a-data-source",
+  "delete-a-block",
+  "get-block-children",
+  "get-self",
+  "get-user",
+  "get-users",
+  "list-data-source-templates",
+  "move-page",
+  "patch-block-children",
+  "patch-page",
+  "post-page",
+  "post-search",
+  "query-data-source",
+  "retrieve-a-block",
+  "retrieve-a-comment",
+  "retrieve-a-data-source",
+  "retrieve-a-database",
+  "retrieve-a-page",
+  "retrieve-a-page-property",
+  "update-a-block",
+  "update-a-data-source",
+]
+`;
+
+exports[`Notion OpenAPI spec -> MCP tools (snapshot) > generates stable tool definitions (name, method, description, params) 1`] = `
+[
+  {
+    "description": "Notion | Create comment
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "create-a-comment",
+    "properties": [
+      "parent",
+      "rich_text",
+    ],
+    "required": [
+      "parent",
+      "rich_text",
+    ],
+  },
+  {
+    "description": "Notion | Create a data source
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "create-a-data-source",
+    "properties": [
+      "Notion-Version",
+      "parent",
+      "properties",
+      "title",
+    ],
+    "required": [
+      "parent",
+      "properties",
+    ],
+  },
+  {
+    "description": "Notion | Delete a block
+Error Responses:
+400: Bad request",
+    "httpMethod": "delete",
+    "name": "delete-a-block",
+    "properties": [
+      "Notion-Version",
+      "block_id",
+    ],
+    "required": [
+      "block_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve block children
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "get-block-children",
+    "properties": [
+      "Notion-Version",
+      "block_id",
+      "page_size",
+      "start_cursor",
+    ],
+    "required": [
+      "block_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve your token's bot user
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "get-self",
+    "properties": [
+      "Notion-Version",
+    ],
+    "required": [],
+  },
+  {
+    "description": "Notion | Retrieve a user
+Error Responses:
+400: 400",
+    "httpMethod": "get",
+    "name": "get-user",
+    "properties": [
+      "Notion-Version",
+      "user_id",
+    ],
+    "required": [
+      "user_id",
+    ],
+  },
+  {
+    "description": "Notion | List all users
+Error Responses:
+400: 400",
+    "httpMethod": "get",
+    "name": "get-users",
+    "properties": [
+      "Notion-Version",
+      "page_size",
+      "start_cursor",
+    ],
+    "required": [],
+  },
+  {
+    "description": "Notion | List templates in a data source
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "list-data-source-templates",
+    "properties": [
+      "Notion-Version",
+      "data_source_id",
+      "page_size",
+      "start_cursor",
+    ],
+    "required": [
+      "data_source_id",
+    ],
+  },
+  {
+    "description": "Notion | Move a page
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "move-page",
+    "properties": [
+      "Notion-Version",
+      "page_id",
+      "parent",
+    ],
+    "required": [
+      "page_id",
+      "parent",
+    ],
+  },
+  {
+    "description": "Notion | Append block children
+Error Responses:
+400: Bad request",
+    "httpMethod": "patch",
+    "name": "patch-block-children",
+    "properties": [
+      "Notion-Version",
+      "after",
+      "block_id",
+      "children",
+    ],
+    "required": [
+      "block_id",
+      "children",
+    ],
+  },
+  {
+    "description": "Notion | Update page properties
+Error Responses:
+400: Bad request",
+    "httpMethod": "patch",
+    "name": "patch-page",
+    "properties": [
+      "Notion-Version",
+      "archived",
+      "cover",
+      "icon",
+      "in_trash",
+      "page_id",
+      "properties",
+    ],
+    "required": [
+      "page_id",
+    ],
+  },
+  {
+    "description": "Notion | Create a page
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "post-page",
+    "properties": [
+      "Notion-Version",
+      "children",
+      "cover",
+      "icon",
+      "parent",
+      "properties",
+    ],
+    "required": [
+      "parent",
+      "properties",
+    ],
+  },
+  {
+    "description": "Notion | Search by title
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "post-search",
+    "properties": [
+      "Notion-Version",
+      "filter",
+      "page_size",
+      "query",
+      "sort",
+      "start_cursor",
+    ],
+    "required": [],
+  },
+  {
+    "description": "Notion | Query a data source
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "query-data-source",
+    "properties": [
+      "Notion-Version",
+      "archived",
+      "data_source_id",
+      "filter",
+      "filter_properties",
+      "in_trash",
+      "page_size",
+      "sorts",
+      "start_cursor",
+    ],
+    "required": [
+      "data_source_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve a block
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-block",
+    "properties": [
+      "Notion-Version",
+      "block_id",
+    ],
+    "required": [
+      "block_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve comments
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-comment",
+    "properties": [
+      "Notion-Version",
+      "block_id",
+      "page_size",
+      "start_cursor",
+    ],
+    "required": [
+      "block_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve a data source
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-data-source",
+    "properties": [
+      "Notion-Version",
+      "data_source_id",
+    ],
+    "required": [
+      "data_source_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve a database
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-database",
+    "properties": [
+      "Notion-Version",
+      "database_id",
+    ],
+    "required": [
+      "database_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve a page
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-page",
+    "properties": [
+      "Notion-Version",
+      "filter_properties",
+      "page_id",
+    ],
+    "required": [
+      "page_id",
+    ],
+  },
+  {
+    "description": "Notion | Retrieve a page property item
+Error Responses:
+400: Bad request",
+    "httpMethod": "get",
+    "name": "retrieve-a-page-property",
+    "properties": [
+      "Notion-Version",
+      "page_id",
+      "page_size",
+      "property_id",
+      "start_cursor",
+    ],
+    "required": [
+      "page_id",
+      "property_id",
+    ],
+  },
+  {
+    "description": "Notion | Update a block
+Error Responses:
+400: Bad request",
+    "httpMethod": "patch",
+    "name": "update-a-block",
+    "properties": [
+      "Notion-Version",
+      "archived",
+      "block_id",
+      "type",
+    ],
+    "required": [
+      "block_id",
+    ],
+  },
+  {
+    "description": "Notion | Update a data source
+Error Responses:
+400: Bad request",
+    "httpMethod": "patch",
+    "name": "update-a-data-source",
+    "properties": [
+      "Notion-Version",
+      "data_source_id",
+      "description",
+      "properties",
+      "title",
+    ],
+    "required": [
+      "data_source_id",
+    ],
+  },
+]
+`;

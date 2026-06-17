@@ -34,7 +34,6 @@
     "zod": "3.24.1"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.33.1",
     "@types/express": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/json-schema": "^7.0.15",
@@ -44,7 +43,6 @@
     "@vitest/coverage-v8": "^4.0.18",
     "esbuild": "^0.25.2",
     "multer": "1.4.5-lts.1",
-    "openai": "^4.91.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^4.0.18"
