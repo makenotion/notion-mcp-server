@@ -69,6 +69,17 @@ If you have hardcoded tool names or prompts that reference the old database tool
 
 ---
 
+## Page content as Markdown
+
+The server exposes two tools for working with page content as enhanced Markdown instead of block JSON, which is significantly more token-efficient for AI agents:
+
+- `retrieve-page-markdown` — Read a page's full content as Markdown (`GET /v1/pages/{page_id}/markdown`). Pass `include_transcript: true` to inline meeting-note transcripts.
+- `update-page-markdown` — Edit a page's content with Markdown (`PATCH /v1/pages/{page_id}/markdown`). Prefer `replace_content` to overwrite the whole page, or `update_content` for targeted find-and-replace edits.
+
+These endpoints require Notion API version `2026-03-11`. The server now sources the `Notion-Version` header **per operation** from the OpenAPI spec, so these tools use `2026-03-11` while the rest of the API continues to use `2025-09-03` — no configuration needed. If you set `Notion-Version` yourself via `OPENAPI_MCP_HEADERS`, your value takes precedence for every tool.
+
+---
+
 ### Installation
 
 #### 1. Setting up integration in Notion

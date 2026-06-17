@@ -22,8 +22,10 @@ exports[`Notion OpenAPI spec -> MCP tools (snapshot) > generates a stable set of
   "retrieve-a-database",
   "retrieve-a-page",
   "retrieve-a-page-property",
+  "retrieve-page-markdown",
   "update-a-block",
   "update-a-data-source",
+  "update-page-markdown",
 ]
 `;
 
@@ -51,7 +53,6 @@ Error Responses:
     "httpMethod": "post",
     "name": "create-a-data-source",
     "properties": [
-      "Notion-Version",
       "parent",
       "properties",
       "title",
@@ -68,7 +69,6 @@ Error Responses:
     "httpMethod": "delete",
     "name": "delete-a-block",
     "properties": [
-      "Notion-Version",
       "block_id",
     ],
     "required": [
@@ -82,7 +82,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "get-block-children",
     "properties": [
-      "Notion-Version",
       "block_id",
       "page_size",
       "start_cursor",
@@ -97,9 +96,7 @@ Error Responses:
 400: Bad request",
     "httpMethod": "get",
     "name": "get-self",
-    "properties": [
-      "Notion-Version",
-    ],
+    "properties": [],
     "required": [],
   },
   {
@@ -109,7 +106,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "get-user",
     "properties": [
-      "Notion-Version",
       "user_id",
     ],
     "required": [
@@ -123,7 +119,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "get-users",
     "properties": [
-      "Notion-Version",
       "page_size",
       "start_cursor",
     ],
@@ -136,7 +131,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "list-data-source-templates",
     "properties": [
-      "Notion-Version",
       "data_source_id",
       "page_size",
       "start_cursor",
@@ -152,7 +146,6 @@ Error Responses:
     "httpMethod": "post",
     "name": "move-page",
     "properties": [
-      "Notion-Version",
       "page_id",
       "parent",
     ],
@@ -168,7 +161,6 @@ Error Responses:
     "httpMethod": "patch",
     "name": "patch-block-children",
     "properties": [
-      "Notion-Version",
       "after",
       "block_id",
       "children",
@@ -185,7 +177,6 @@ Error Responses:
     "httpMethod": "patch",
     "name": "patch-page",
     "properties": [
-      "Notion-Version",
       "archived",
       "cover",
       "icon",
@@ -204,7 +195,6 @@ Error Responses:
     "httpMethod": "post",
     "name": "post-page",
     "properties": [
-      "Notion-Version",
       "children",
       "cover",
       "icon",
@@ -223,7 +213,6 @@ Error Responses:
     "httpMethod": "post",
     "name": "post-search",
     "properties": [
-      "Notion-Version",
       "filter",
       "page_size",
       "query",
@@ -239,7 +228,6 @@ Error Responses:
     "httpMethod": "post",
     "name": "query-data-source",
     "properties": [
-      "Notion-Version",
       "archived",
       "data_source_id",
       "filter",
@@ -260,7 +248,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-block",
     "properties": [
-      "Notion-Version",
       "block_id",
     ],
     "required": [
@@ -274,7 +261,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-comment",
     "properties": [
-      "Notion-Version",
       "block_id",
       "page_size",
       "start_cursor",
@@ -290,7 +276,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-data-source",
     "properties": [
-      "Notion-Version",
       "data_source_id",
     ],
     "required": [
@@ -304,7 +289,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-database",
     "properties": [
-      "Notion-Version",
       "database_id",
     ],
     "required": [
@@ -318,7 +302,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-page",
     "properties": [
-      "Notion-Version",
       "filter_properties",
       "page_id",
     ],
@@ -333,7 +316,6 @@ Error Responses:
     "httpMethod": "get",
     "name": "retrieve-a-page-property",
     "properties": [
-      "Notion-Version",
       "page_id",
       "page_size",
       "property_id",
@@ -345,13 +327,29 @@ Error Responses:
     ],
   },
   {
+    "description": "Notion | Retrieve a page as Markdown
+Error Responses:
+400: Bad request
+403: The integration lacks the read/update content capability required for this page.
+404: Page not found or not shared with the integration.
+429: Rate limited.",
+    "httpMethod": "get",
+    "name": "retrieve-page-markdown",
+    "properties": [
+      "include_transcript",
+      "page_id",
+    ],
+    "required": [
+      "page_id",
+    ],
+  },
+  {
     "description": "Notion | Update a block
 Error Responses:
 400: Bad request",
     "httpMethod": "patch",
     "name": "update-a-block",
     "properties": [
-      "Notion-Version",
       "archived",
       "block_id",
       "type",
@@ -367,7 +365,6 @@ Error Responses:
     "httpMethod": "patch",
     "name": "update-a-data-source",
     "properties": [
-      "Notion-Version",
       "data_source_id",
       "description",
       "properties",
@@ -375,6 +372,29 @@ Error Responses:
     ],
     "required": [
       "data_source_id",
+    ],
+  },
+  {
+    "description": "Notion | Update a page's content as Markdown
+Error Responses:
+400: Bad request
+403: The integration lacks the read/update content capability required for this page.
+404: Page not found or not shared with the integration.
+409: Conflict (e.g. row limit exceeded).
+429: Rate limited.",
+    "httpMethod": "patch",
+    "name": "update-page-markdown",
+    "properties": [
+      "insert_content",
+      "page_id",
+      "replace_content",
+      "replace_content_range",
+      "type",
+      "update_content",
+    ],
+    "required": [
+      "page_id",
+      "type",
     ],
   },
 ]

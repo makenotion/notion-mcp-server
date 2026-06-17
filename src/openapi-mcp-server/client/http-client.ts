@@ -32,8 +32,12 @@ export class HttpClientError extends Error {
 export class HttpClient {
   private api: Promise<AxiosInstance>
   private client: OpenAPIClientAxios
+  private config: HttpClientConfig
+  private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document
 
   constructor(config: HttpClientConfig, openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document) {
+    this.config = config
+    this.openApiSpec = openApiSpec
     // @ts-expect-error
     this.client = new (OpenAPIClientAxios.default ?? OpenAPIClientAxios)({
       definition: openApiSpec,
@@ -47,6 +51,54 @@ export class HttpClient {
       },
     })
     this.api = this.client.init()
+  }
+
+  /**
+   * Resolve a possibly-$ref'd parameter to its inline definition.
+   * Only local refs (e.g. `#/components/parameters/notionVersion`) are supported.
+   */
+  private resolveParameter(
+    param: OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject,
+  ): OpenAPIV3.ParameterObject | null {
+    if (!('$ref' in param)) {
+      return param as OpenAPIV3.ParameterObject
+    }
+    const ref = param.$ref
+    if (!ref.startsWith('#/')) {
+      return null
+    }
+    let node: any = this.openApiSpec
+    for (const segment of ref.slice(2).split('/')) {
+      node = node?.[segment]
+      if (node === undefined) return null
+    }
+    return node && node.name ? (node as OpenAPIV3.ParameterObject) : null
+  }
+
+  /**
+   * Build the server-managed header parameters declared on an operation.
+   *
+   * Header parameters (currently `Notion-Version`) are not exposed as tool
+   * inputs; their value comes from the operation's header-parameter `default`
+   * in the OpenAPI spec. This lets each endpoint pin the API version it needs —
+   * e.g. the page-markdown endpoints require `2026-03-11` while the rest of the
+   * API stays on `2025-09-03`. A header the caller configured globally (via
+   * HttpClientConfig.headers) takes precedence and is left untouched.
+   */
+  private buildDefaultHeaders(operation: OpenAPIV3.OperationObject): Record<string, string> {
+    const configured = new Set(Object.keys(this.config.headers ?? {}).map((key) => key.toLowerCase()))
+    const headers: Record<string, string> = {}
+    for (const param of operation.parameters ?? []) {
+      const resolved = this.resolveParameter(param)
+      if (!resolved || resolved.in !== 'header' || configured.has(resolved.name.toLowerCase())) {
+        continue
+      }
+      const schema = resolved.schema as OpenAPIV3.SchemaObject | undefined
+      if (schema && schema.default !== undefined) {
+        headers[resolved.name] = String(schema.default)
+      }
+    }
+    return headers
   }
 
   private async prepareFileUpload(operation: OpenAPIV3.OperationObject, params: Record<string, any>): Promise<FormData | null> {
@@ -157,6 +209,7 @@ export class HttpClient {
         : { ...(hasBody ? { 'Content-Type': 'application/json' } : { 'Content-Type': null }) }
       const requestConfig = {
         headers: {
+          ...this.buildDefaultHeaders(operation),
           ...headers,
         },
       }

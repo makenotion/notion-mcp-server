@@ -2212,6 +2212,530 @@
         "deprecated": false,
         "security": []
       }
+    },
+    "/v1/pages/{page_id}/markdown": {
+      "get": {
+        "summary": "Retrieve a page as Markdown",
+        "description": "Retrieve the full content of a Notion page rendered as enhanced Markdown. Designed for agentic and developer tools that work natively with Markdown instead of the block JSON returned by Retrieve block children.",
+        "operationId": "retrieve-page-markdown",
+        "tags": [
+          "Pages"
+        ],
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identifier for a Notion page (or block) to read or update as markdown."
+          },
+          {
+            "name": "include_transcript",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to include meeting note transcripts. When false (default), a placeholder with the meeting note URL is shown instead of the full transcript."
+          },
+          {
+            "name": "Notion-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2026-03-11"
+            },
+            "description": "The Notion API version. The page-markdown endpoints require 2026-03-11 or later."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "page_markdown"
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "ID of the page or block."
+                    },
+                    "markdown": {
+                      "type": "string",
+                      "description": "Page content rendered as enhanced Markdown."
+                    },
+                    "truncated": {
+                      "type": "boolean",
+                      "description": "True if content was truncated because the page exceeds the block limit."
+                    },
+                    "unknown_block_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "description": "Block IDs that could not be rendered (e.g. due to permissions or truncation). Pass them back to this endpoint to fetch them individually."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The integration lacks the read/update content capability required for this page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found or not shared with the integration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 429
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      },
+      "patch": {
+        "summary": "Update a page's content as Markdown",
+        "description": "Update the content of a Notion page using enhanced Markdown. Prefer `replace_content` to overwrite the whole page or `update_content` for targeted find-and-replace edits.",
+        "operationId": "update-page-markdown",
+        "tags": [
+          "Pages"
+        ],
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identifier for a Notion page (or block) to read or update as markdown."
+          },
+          {
+            "name": "Notion-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2026-03-11"
+            },
+            "description": "The Notion API version. The page-markdown endpoints require 2026-03-11 or later."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "description": "Specify exactly one edit operation. Set `type` to the operation name and provide the matching object.",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "replace_content",
+                      "update_content",
+                      "insert_content",
+                      "replace_content_range"
+                    ],
+                    "description": "The kind of edit to apply. Prefer `replace_content` (overwrite the whole page) or `update_content` (targeted find-and-replace). `insert_content` and `replace_content_range` are deprecated."
+                  },
+                  "replace_content": {
+                    "type": "object",
+                    "required": [
+                      "new_str"
+                    ],
+                    "description": "Provide when type is `replace_content`. Replaces the entire page content.",
+                    "properties": {
+                      "new_str": {
+                        "type": "string",
+                        "description": "The complete new page content as enhanced Markdown."
+                      },
+                      "allow_deleting_content": {
+                        "type": "boolean",
+                        "description": "Permit deletion of existing child pages/databases that are no longer present in the new content."
+                      }
+                    }
+                  },
+                  "update_content": {
+                    "type": "object",
+                    "required": [
+                      "content_updates"
+                    ],
+                    "description": "Provide when type is `update_content`. Applies targeted find-and-replace edits.",
+                    "properties": {
+                      "content_updates": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "description": "Up to 100 find-and-replace edits applied in order.",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "old_str",
+                            "new_str"
+                          ],
+                          "properties": {
+                            "old_str": {
+                              "type": "string",
+                              "description": "Exact existing Markdown text to find."
+                            },
+                            "new_str": {
+                              "type": "string",
+                              "description": "Replacement Markdown text."
+                            },
+                            "replace_all_matches": {
+                              "type": "boolean",
+                              "description": "Replace every occurrence of old_str instead of just the first (default false)."
+                            }
+                          }
+                        }
+                      },
+                      "allow_deleting_content": {
+                        "type": "boolean",
+                        "description": "Permit deletion of existing child pages/databases removed by the edits."
+                      }
+                    }
+                  },
+                  "insert_content": {
+                    "type": "object",
+                    "deprecated": true,
+                    "required": [
+                      "content"
+                    ],
+                    "description": "Deprecated. Provide when type is `insert_content`. Inserts Markdown at a position.",
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "description": "Enhanced Markdown to insert."
+                      },
+                      "after": {
+                        "type": "string",
+                        "description": "Ellipsis-format selection (\"start text...end text\") to insert after. Cannot be combined with position."
+                      },
+                      "position": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "start",
+                              "end"
+                            ]
+                          }
+                        },
+                        "description": "Insert at the start or end of the page. Cannot be combined with after."
+                      }
+                    }
+                  },
+                  "replace_content_range": {
+                    "type": "object",
+                    "deprecated": true,
+                    "required": [
+                      "content",
+                      "content_range"
+                    ],
+                    "description": "Deprecated. Provide when type is `replace_content_range`. Replaces a selected range of Markdown.",
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "description": "New Markdown content for the range."
+                      },
+                      "content_range": {
+                        "type": "string",
+                        "description": "Ellipsis-format selection (\"start text...end text\") identifying the range to replace."
+                      },
+                      "allow_deleting_content": {
+                        "type": "boolean",
+                        "description": "Permit deletion of child pages/databases within the replaced range."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "page_markdown"
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "ID of the page or block."
+                    },
+                    "markdown": {
+                      "type": "string",
+                      "description": "Page content rendered as enhanced Markdown."
+                    },
+                    "truncated": {
+                      "type": "boolean",
+                      "description": "True if content was truncated because the page exceeds the block limit."
+                    },
+                    "unknown_block_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "description": "Block IDs that could not be rendered (e.g. due to permissions or truncation). Pass them back to this endpoint to fetch them individually."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The integration lacks the read/update content capability required for this page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 403
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found or not shared with the integration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 429
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict (e.g. row limit exceeded).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 409
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
     }
   }
 }

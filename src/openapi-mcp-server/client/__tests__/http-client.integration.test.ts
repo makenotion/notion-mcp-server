@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { HttpClient } from '../http-client'
-import express from 'express'
+import express, { type Express } from 'express'
 import type { OpenAPIV3 } from 'openapi-types'
 import type { Server } from 'http'
+import { startTestServer, stopTestServer } from './test-server'
 
 interface Pet {
   id: number
@@ -26,7 +27,7 @@ function resetPets() {
   nextId = 4
 }
 
-function createTestServer(port: number): Server {
+function createTestApp(): Express {
   const app = express()
   app.use(express.json())
 
@@ -79,26 +80,21 @@ function createTestServer(port: number): Server {
     res.status(204).send()
   })
 
-  return app.listen(port)
+  return app
 }
 
 describe('HttpClient Integration Tests', () => {
-  let PORT: number
   let BASE_URL: string
   let server: Server
   let openApiSpec: OpenAPIV3.Document
   let client: HttpClient
 
   beforeEach(async () => {
-    // Use a random port to avoid conflicts
-    PORT = 3000 + Math.floor(Math.random() * 1000)
-    BASE_URL = `http://localhost:${PORT}`
-
     // Initialize pets data
     resetPets()
 
-    // Start the test server
-    server = createTestServer(PORT)
+    // Start the test server on an ephemeral port and wait until it is listening
+    ;({ server, baseUrl: BASE_URL } = await startTestServer(createTestApp()))
 
     // Create a minimal OpenAPI spec for the test server
     openApiSpec = {
@@ -152,7 +148,7 @@ describe('HttpClient Integration Tests', () => {
   })
 
   afterEach(async () => {
-    server.close()
+    await stopTestServer(server)
   })
 
   it('should list all pets', async () => {

@@ -269,6 +269,12 @@ export class OpenAPIToMCPConverter {
       for (const param of operation.parameters) {
         const paramObj = this.resolveParameter(param)
         if (paramObj && paramObj.schema) {
+          // Header parameters (e.g. Notion-Version) are transport concerns that the
+          // server manages, not values the model should supply. Skip them so they
+          // don't clutter the tool schema; HttpClient applies their spec defaults.
+          if (paramObj.in === 'header') {
+            continue
+          }
           const schema = this.convertOpenApiSchemaToJsonSchema(paramObj.schema, new Set(), false)
           // Merge parameter-level description if available
           if (paramObj.description) {

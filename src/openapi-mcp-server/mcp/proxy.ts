@@ -221,9 +221,10 @@ export class MCPProxy {
     // Alternative: try NOTION_TOKEN
     const notionToken = process.env.NOTION_TOKEN
     if (notionToken) {
+      // Notion-Version is intentionally omitted: it is sourced per-operation from
+      // the OpenAPI spec by HttpClient, so endpoints can pin the version they need.
       return {
         'Authorization': `Bearer ${notionToken}`,
-        'Notion-Version': '2025-09-03'
       }
     }
 

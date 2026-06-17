@@ -265,11 +265,12 @@ describe('MCPProxy', () => {
       process.env.NOTION_TOKEN = 'ntn_test_token_123'
 
       const proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      // Notion-Version is no longer hardcoded here; it is sourced per-operation
+      // from the OpenAPI spec by HttpClient.
       expect(HttpClient).toHaveBeenCalledWith(
         expect.objectContaining({
           headers: {
             'Authorization': 'Bearer ntn_test_token_123',
-            'Notion-Version': '2025-09-03'
           },
         }),
         expect.anything(),
@@ -317,7 +318,6 @@ describe('MCPProxy', () => {
         expect.objectContaining({
           headers: {
             'Authorization': 'Bearer ntn_test_token_123',
-            'Notion-Version': '2025-09-03'
           },
         }),
         expect.anything(),
