@@ -836,3 +836,30 @@ describe('MCPProxy', () => {
     })
   })
 })
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { getPackageVersion } from '../../../version'
+
+describe('serverInfo version (issue #310)', () => {
+  let spec: OpenAPIV3.Document
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    spec = {
+      openapi: '3.0.0',
+      servers: [{ url: 'http://localhost:3000' }],
+      info: { title: 'Test API', version: '9.9.9' },
+      paths: {},
+    }
+  })
+
+  it('reports the package.json version to MCP clients, not the hardcoded 1.0.0', () => {
+    new MCPProxy('Notion API', spec)
+    const initArg = (Server as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1)![0] as {
+      name: string
+      version: string
+    }
+    expect(initArg.version).toBe(getPackageVersion())
+    expect(initArg.version).not.toBe('1.0.0')
+  })
+})

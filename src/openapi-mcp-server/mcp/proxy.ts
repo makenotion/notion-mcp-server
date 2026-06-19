@@ -5,6 +5,7 @@ import { OpenAPIToMCPConverter } from '../openapi/parser'
 import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { getPackageVersion } from '../../version'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -97,7 +98,7 @@ export class MCPProxy {
    *   single deployment can serve multiple Notion integrations.
    */
   constructor(name: string, openApiSpec: OpenAPIV3.Document, headers?: Record<string, string>) {
-    this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
+    this.server = new Server({ name, version: getPackageVersion() }, { capabilities: { tools: {} } })
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
       throw new Error('No base URL found in OpenAPI spec')
