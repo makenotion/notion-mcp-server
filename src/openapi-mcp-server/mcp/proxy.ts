@@ -25,62 +25,66 @@ type NewToolDefinition = {
 
 /**
  * Recursively deserialize stringified JSON values in parameters.
- * This handles the case where MCP clients (like Cursor, Claude Code) double-serialize
- * nested object parameters, sending them as JSON strings instead of objects.
+ * This handles the case where MCP clients (like Cursor, Claude Code, and some
+ * SDKs) double-serialize nested object/array parameters, sending them as JSON
+ * strings instead of structured values.
+ *
+ * The whole argument tree is walked uniformly: every object property and every
+ * array element is visited, JSON-looking strings are parsed, and the parsed
+ * result is walked again. This normalizes deeply nested cases — including a
+ * stringified object that sits inside an array element object (e.g.
+ * `{ children: [{ paragraph: '{"rich_text":[...]}' }] }`) — before the request
+ * is forwarded to the Notion API.
  *
  * @see https://github.com/makenotion/notion-mcp-server/issues/176
  */
 function deserializeParams(params: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}
-
   for (const [key, value] of Object.entries(params)) {
-    if (typeof value === 'string') {
-      // Check if the string looks like a JSON object or array
-      const trimmed = value.trim()
-      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-          (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-        try {
-          const parsed = JSON.parse(value)
-          // Only use parsed value if it's an object or array
-          if (typeof parsed === 'object' && parsed !== null) {
-            // Recursively deserialize nested objects
-            result[key] = Array.isArray(parsed)
-              ? parsed
-              : deserializeParams(parsed as Record<string, unknown>)
-            continue
-          }
-        } catch {
-          // If parsing fails, keep the original string value
+    result[key] = deserializeValue(value)
+  }
+  return result
+}
+
+/**
+ * Normalize a single value: parse a JSON-object/array-looking string into a
+ * structured value (recursing into the result), walk into every array element,
+ * and walk into every nested object property. Non-JSON strings and scalars are
+ * returned unchanged, so values the schema legitimately wants as strings (and
+ * numbers/booleans encoded as strings) are left intact.
+ */
+function deserializeValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    const looksLikeJsonObjectOrArray =
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    if (looksLikeJsonObjectOrArray) {
+      try {
+        const parsed: unknown = JSON.parse(value)
+        if (typeof parsed === 'object' && parsed !== null) {
+          return deserializeValue(parsed)
         }
+      } catch {
+        // Not valid JSON after all; keep the original string value.
       }
-    } else if (Array.isArray(value)) {
-      // Deserialize any JSON-string items within the array
-      result[key] = value.map((item) => {
-        if (typeof item !== 'string') return item
-        const trimmed = item.trim()
-        if (
-          (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-          (trimmed.startsWith('[') && trimmed.endsWith(']'))
-        ) {
-          try {
-            const parsed = JSON.parse(item)
-            if (typeof parsed === 'object' && parsed !== null) {
-              return Array.isArray(parsed)
-                ? parsed
-                : deserializeParams(parsed as Record<string, unknown>)
-            }
-          } catch {
-            // If parsing fails, keep the original string item
-          }
-        }
-        return item
-      })
-      continue
     }
-    result[key] = value
+    return value
   }
 
-  return result
+  if (Array.isArray(value)) {
+    return value.map(deserializeValue)
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const result: Record<string, unknown> = {}
+    for (const [key, nested] of Object.entries(value)) {
+      result[key] = deserializeValue(nested)
+    }
+    return result
+  }
+
+  return value
 }
 
 // import this class, extend and return server

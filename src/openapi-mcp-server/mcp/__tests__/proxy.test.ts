@@ -834,5 +834,104 @@ describe('MCPProxy', () => {
         },
       )
     })
+
+    it('should handle API-create-a-comment parent provided as a JSON string', async () => {
+      const mockResponse = {
+        data: { id: 'new-comment-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-create-a-comment': {
+          operationId: 'create-a-comment',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/comments',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // Some clients double-encode `parent` as a JSON string. Forwarding that to
+      // the Notion API makes it throw on `"block_id" in <string>` and return a
+      // 500, so deserialize it back to an object first.
+      const parentAsString = JSON.stringify({ page_id: '3870bb29-1a64-816b-8641-c87ca28062d0' })
+
+      await expect(
+        callToolHandler({
+          params: {
+            name: 'API-create-a-comment',
+            arguments: {
+              parent: parentAsString,
+              rich_text: [{ text: { content: 'Hello' } }],
+            },
+          },
+        }),
+      ).resolves.toBeDefined()
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { page_id: '3870bb29-1a64-816b-8641-c87ca28062d0' },
+        }),
+      )
+    })
+
+    it('should deserialize a stringified object nested inside an array element object', async () => {
+      const mockResponse = {
+        data: { id: 'new-page-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-appendBlockChildren': {
+          operationId: 'appendBlockChildren',
+          responses: { '200': { description: 'Success' } },
+          method: 'patch',
+          path: '/blocks/{block_id}/children',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // The array element is a real object, but one of its properties is itself
+      // a stringified object. The previous shallow array handling left this as a
+      // string; the uniform recursive walk now normalizes it.
+      const children = [
+        {
+          object: 'block',
+          type: 'paragraph',
+          paragraph: JSON.stringify({ rich_text: [{ type: 'text', text: { content: 'Hello' } }] }),
+        },
+      ]
+
+      await callToolHandler({
+        params: {
+          name: 'API-appendBlockChildren',
+          arguments: { children },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          children: [
+            {
+              object: 'block',
+              type: 'paragraph',
+              paragraph: { rich_text: [{ type: 'text', text: { content: 'Hello' } }] },
+            },
+          ],
+        },
+      )
+    })
   })
 })
