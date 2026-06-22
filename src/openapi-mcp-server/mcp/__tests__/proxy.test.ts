@@ -933,5 +933,87 @@ describe('MCPProxy', () => {
         },
       )
     })
+
+    it('should deserialize a double-stringified parent', async () => {
+      const mockResponse = {
+        data: { id: 'new-comment-id' },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-create-a-comment': {
+          operationId: 'create-a-comment',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/comments',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      // A client that serialized `parent` twice: JSON.stringify(JSON.stringify(parent)).
+      const doubleEncodedParent = JSON.stringify(JSON.stringify({ page_id: '3870bb29-1a64-816b-8641-c87ca28062d0' }))
+
+      await callToolHandler({
+        params: {
+          name: 'API-create-a-comment',
+          arguments: {
+            parent: doubleEncodedParent,
+            rich_text: [{ text: { content: 'Hello' } }],
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          parent: { page_id: '3870bb29-1a64-816b-8641-c87ca28062d0' },
+        }),
+      )
+    })
+
+    it('should not coerce scalar or quoted-scalar string params', async () => {
+      const mockResponse = {
+        data: { success: true },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse)
+
+      ;(proxy as any).openApiLookup = {
+        'API-search': {
+          operationId: 'search',
+          responses: { '200': { description: 'Success' } },
+          method: 'post',
+          path: '/search',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      await callToolHandler({
+        params: {
+          name: 'API-search',
+          arguments: {
+            // Looks like JSON scalars, but the schema wants strings: keep as-is
+            // rather than coercing to number/boolean or unwrapping the quotes.
+            count: '123',
+            flag: 'true',
+            quoted: '"hello"',
+          },
+        },
+      })
+
+      expect(HttpClient.prototype.executeOperation).toHaveBeenCalledWith(
+        expect.anything(),
+        { count: '123', flag: 'true', quoted: '"hello"' },
+      )
+    })
   })
 })
