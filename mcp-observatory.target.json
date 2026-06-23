@@ -1,10 +1,9 @@
 {
   "targetId": "mcp-server",
   "adapter": "local-process",
-  "command": "npx",
+  "command": "node",
   "args": [
-    "-y",
-    "@notionhq/notion-mcp-server"
+    "bin/cli.mjs"
   ],
   "timeoutMs": 15000,
   "metadata": {
