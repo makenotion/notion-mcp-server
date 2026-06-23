@@ -19,7 +19,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: KryptosAI/mcp-observatory/action@main
+      - uses: KryptosAI/mcp-observatory/action@b73627146ff9f9d19b9f9c1d3d88696a67fd4a66
         with:
           target: mcp-observatory.target.json
           deep: true
