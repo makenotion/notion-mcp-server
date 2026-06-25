@@ -10,6 +10,7 @@ export type ServerOptions = {
   unsafeDisableAuth: boolean
   usedDeprecatedDisableAuthFlag: boolean
   enableTokenPassthrough: boolean
+  allowedHosts: string[]
 }
 
 type DnsRebindingProtectionOptions = Pick<
@@ -26,6 +27,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
   let unsafeDisableAuth = false
   let usedDeprecatedDisableAuthFlag = false
   let enableTokenPassthrough = process.env.ENABLE_TOKEN_PASSTHROUGH === 'true'
+  let allowedHosts: string[] = []
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--transport' && i + 1 < args.length) {
@@ -47,6 +49,14 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
       usedDeprecatedDisableAuthFlag = true
     } else if (args[i] === '--enable-token-passthrough') {
       enableTokenPassthrough = true
+    } else if (args[i] === '--allowed-hosts' && i + 1 < args.length) {
+      allowedHosts.push(
+        ...args[i + 1]
+          .split(',')
+          .map((host) => host.trim())
+          .filter(Boolean),
+      )
+      i++
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(getHelpText())
       process.exit(0)
@@ -62,6 +72,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     unsafeDisableAuth,
     usedDeprecatedDisableAuthFlag,
     enableTokenPassthrough,
+    allowedHosts,
   }
 }
 
@@ -76,9 +87,10 @@ Options:
   --auth-token <token>     Bearer token for HTTP transport authentication (auto-generated if not provided)
   --unsafe-disable-auth    Disable bearer token authentication for HTTP transport. Unsafe; use only on isolated networks.
   --disable-auth           Deprecated alias for --unsafe-disable-auth
+  --allowed-hosts <hosts>  Extra comma-separated hosts allowed by DNS rebinding protection when auth is disabled
   --enable-token-passthrough  Let each HTTP client supply its own Notion token per request
-                              via the 'Notion-Token' header, so one deployment can serve
-                              multiple Notion integrations (default: off).
+                               via the 'Notion-Token' header, so one deployment can serve
+                               multiple Notion integrations (default: off).
   --help, -h               Show this help message
 
 Environment Variables:
@@ -133,8 +145,8 @@ export function getDnsRebindingProtectionOptions(
 
   return {
     enableDnsRebindingProtection: true,
-    allowedHosts: getAllowedHosts(options.host, options.port),
-    allowedOrigins: getAllowedOrigins(options.host, options.port),
+    allowedHosts: getAllowedHosts(options.host, options.port, options.allowedHosts),
+    allowedOrigins: getAllowedOrigins(options.host, options.port, options.allowedHosts),
   }
 }
 
@@ -142,21 +154,29 @@ export function getHttpServerDisplayUrl(options: ServerOptions): string {
   return `http://${formatHostForUrl(displayHostForBinding(options.host))}:${options.port}`
 }
 
-function getAllowedHosts(host: string, port: number): string[] {
+function getAllowedHosts(host: string, port: number, extraHosts: string[]): string[] {
   const allowedHosts = new Set<string>()
-  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', normalizeHostHeader(host)]) {
+  for (const allowedHost of getHostSources(host, extraHosts)) {
     allowedHosts.add(allowedHost)
     allowedHosts.add(`${allowedHost}:${port}`)
   }
   return [...allowedHosts]
 }
 
-function getAllowedOrigins(host: string, port: number): string[] {
+function getAllowedOrigins(host: string, port: number, extraHosts: string[]): string[] {
   const allowedOrigins = new Set<string>()
-  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', normalizeHostHeader(host)]) {
+  for (const allowedHost of getHostSources(host, extraHosts)) {
     allowedOrigins.add(`http://${formatHostForUrl(allowedHost)}:${port}`)
   }
   return [...allowedOrigins]
+}
+
+function getHostSources(host: string, extraHosts: string[]): string[] {
+  const normalizedHosts = new Set<string>()
+  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', host, ...extraHosts]) {
+    normalizedHosts.add(normalizeHostHeader(allowedHost))
+  }
+  return [...normalizedHosts]
 }
 
 function isLoopbackHost(host: string): boolean {
