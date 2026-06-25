@@ -10,6 +10,7 @@ export type ServerOptions = {
   unsafeDisableAuth: boolean
   usedDeprecatedDisableAuthFlag: boolean
   enableTokenPassthrough: boolean
+  enableStatelessHttp: boolean
 }
 
 type DnsRebindingProtectionOptions = Pick<
@@ -26,6 +27,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
   let unsafeDisableAuth = false
   let usedDeprecatedDisableAuthFlag = false
   let enableTokenPassthrough = process.env.ENABLE_TOKEN_PASSTHROUGH === 'true'
+  let enableStatelessHttp = process.env.ENABLE_STATELESS_HTTP === 'true'
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--transport' && i + 1 < args.length) {
@@ -47,6 +49,8 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
       usedDeprecatedDisableAuthFlag = true
     } else if (args[i] === '--enable-token-passthrough') {
       enableTokenPassthrough = true
+    } else if (args[i] === '--stateless-http') {
+      enableStatelessHttp = true
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(getHelpText())
       process.exit(0)
@@ -62,6 +66,7 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     unsafeDisableAuth,
     usedDeprecatedDisableAuthFlag,
     enableTokenPassthrough,
+    enableStatelessHttp,
   }
 }
 
@@ -79,6 +84,8 @@ Options:
   --enable-token-passthrough  Let each HTTP client supply its own Notion token per request
                               via the 'Notion-Token' header, so one deployment can serve
                               multiple Notion integrations (default: off).
+  --stateless-http         Disable MCP session tracking for HTTP transport. Each POST request
+                               gets a fresh transport, and GET/DELETE /mcp are rejected (default: off).
   --help, -h               Show this help message
 
 Environment Variables:
@@ -86,6 +93,7 @@ Environment Variables:
   OPENAPI_MCP_HEADERS      JSON string with Notion API headers (alternative)
   AUTH_TOKEN               Bearer token for HTTP transport authentication (alternative to --auth-token)
   ENABLE_TOKEN_PASSTHROUGH Set to 'true' to enable per-request Notion tokens (alternative to --enable-token-passthrough)
+  ENABLE_STATELESS_HTTP    Set to 'true' to disable HTTP session tracking (alternative to --stateless-http)
 
 Examples:
   notion-mcp-server                                      # Use stdio transport (default)
@@ -97,6 +105,7 @@ Examples:
   notion-mcp-server --transport http --unsafe-disable-auth # Use Streamable HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http  # Use Streamable HTTP transport with auth token from env var
   notion-mcp-server --transport http --enable-token-passthrough # Per-request Notion token via the Notion-Token header
+  notion-mcp-server --transport http --stateless-http    # Stateless Streamable HTTP transport
 `
 }
 
