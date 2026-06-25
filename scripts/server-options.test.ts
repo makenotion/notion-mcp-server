@@ -156,6 +156,37 @@ describe('server options', () => {
     expect(getHelpText()).toContain('--allowed-hosts <hosts>')
   })
 
+  it('parses stateless HTTP mode from the CLI flag', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--stateless-http',
+    ])
+
+    expect(options.enableStatelessHttp).toBe(true)
+  })
+
+  it('reads stateless HTTP mode from the environment', () => {
+    const original = process.env.ENABLE_STATELESS_HTTP
+    process.env.ENABLE_STATELESS_HTTP = 'true'
+
+    try {
+      const options = parseServerOptions([...argv, '--transport', 'http'])
+      expect(options.enableStatelessHttp).toBe(true)
+    } finally {
+      if (original === undefined) {
+        delete process.env.ENABLE_STATELESS_HTTP
+      } else {
+        process.env.ENABLE_STATELESS_HTTP = original
+      }
+    }
+  })
+
+  it('documents stateless HTTP mode in the help text', () => {
+    expect(getHelpText()).toContain('--stateless-http')
+  })
+
   it('warns clearly for unsafe auth disabling', () => {
     const options = parseServerOptions([
       ...argv,

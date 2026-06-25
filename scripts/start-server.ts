@@ -11,16 +11,143 @@ import express from 'express'
 import { initProxy, ValidationError } from '../src/init-server'
 import {
   NOTION_TOKEN_HEADER,
-  notionHeadersForToken,
   redactToken,
-  resolveNotionToken,
+  resolveNotionHeadersForRequest,
 } from '../src/openapi-mcp-server/mcp/token'
 import {
   getDnsRebindingProtectionOptions,
   getHttpServerDisplayUrl,
   getUnsafeAuthWarnings,
+  type ServerOptions,
   parseServerOptions,
 } from './server-options'
+
+type SessionTransports = Record<string, StreamableHTTPServerTransport>
+
+type HttpRequestContext = {
+  specPath: string
+  baseUrl: string | undefined
+  options: ServerOptions
+  enableTokenPassthrough: boolean
+  hasEnvNotionToken: boolean
+  dnsRebindingProtectionOptions:
+    | ReturnType<typeof getDnsRebindingProtectionOptions>
+    | undefined
+}
+
+function sendJsonRpcError(
+  res: express.Response,
+  status: number,
+  code: number,
+  message: string,
+): void {
+  res.status(status).json({
+    jsonrpc: '2.0',
+    error: { code, message },
+    id: null,
+  })
+}
+
+function resolveRequestHeaders(
+  req: express.Request,
+  res: express.Response,
+  context: HttpRequestContext,
+  requireExplicitToken: boolean,
+): Record<string, string> | undefined {
+  const requestHeaders = resolveNotionHeadersForRequest(req.headers, {
+    enableTokenPassthrough: context.enableTokenPassthrough,
+    allowAuthorizationFallback: context.options.unsafeDisableAuth,
+    hasEnvNotionToken: context.hasEnvNotionToken,
+    requireExplicitToken,
+  })
+
+  if (requestHeaders.status === 'error') {
+    sendJsonRpcError(res, 401, -32001, requestHeaders.message)
+    return undefined
+  }
+
+  return requestHeaders.headers
+}
+
+async function handleStatelessPostRequest(
+  req: express.Request,
+  res: express.Response,
+  context: HttpRequestContext,
+): Promise<void> {
+  const requestHeaders = resolveRequestHeaders(
+    req,
+    res,
+    context,
+    context.enableTokenPassthrough,
+  )
+  if (!requestHeaders) {
+    return
+  }
+
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    ...(context.dnsRebindingProtectionOptions ?? {}),
+  })
+  res.on('close', () => {
+    void transport.close()
+  })
+
+  const proxy = await initProxy(context.specPath, context.baseUrl, requestHeaders)
+  await proxy.connect(transport)
+  await transport.handleRequest(req, res, req.body)
+}
+
+async function getStatefulTransport(
+  req: express.Request,
+  res: express.Response,
+  transports: SessionTransports,
+  context: HttpRequestContext,
+): Promise<StreamableHTTPServerTransport | undefined> {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined
+  if (sessionId && transports[sessionId]) {
+    return transports[sessionId]
+  }
+
+  if (sessionId || !isInitializeRequest(req.body)) {
+    sendJsonRpcError(res, 400, -32000, 'Bad Request: No valid session ID provided')
+    return undefined
+  }
+
+  const requestHeaders = resolveRequestHeaders(req, res, context, false)
+  if (!requestHeaders) {
+    return undefined
+  }
+
+  const tokenResolution = resolveNotionHeadersForRequest(req.headers, {
+    enableTokenPassthrough: context.enableTokenPassthrough,
+    allowAuthorizationFallback: context.options.unsafeDisableAuth,
+    hasEnvNotionToken: context.hasEnvNotionToken,
+    requireExplicitToken: false,
+  })
+  if (tokenResolution.status === 'ok' && tokenResolution.token) {
+    console.log(`Initializing session with per-request Notion token ${redactToken(tokenResolution.token)}`)
+  }
+
+  let transport!: StreamableHTTPServerTransport
+  transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (initializedSessionId) => {
+      transports[initializedSessionId] = transport
+    },
+    ...(context.dnsRebindingProtectionOptions ?? {}),
+  })
+
+  transport.onclose = () => {
+    if (transport.sessionId) {
+      delete transports[transport.sessionId]
+    }
+  }
+
+  const proxy = await initProxy(context.specPath, context.baseUrl, requestHeaders)
+  await proxy.connect(transport)
+
+  return transport
+}
 
 export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
@@ -110,110 +237,62 @@ export async function startServer(args: string[] = process.argv) {
     // Notion integrations: each connection brings its own token via a header
     // instead of everyone sharing the startup env token.
     const enableTokenPassthrough = options.enableTokenPassthrough
+    const enableStatelessHttp = options.enableStatelessHttp
     const hasEnvNotionToken = Boolean(process.env.NOTION_TOKEN || process.env.OPENAPI_MCP_HEADERS)
 
     // Map to store transports by session ID
-    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
+    const transports: SessionTransports = {}
     const dnsRebindingProtectionOptions = getDnsRebindingProtectionOptions(options)
+    const requestContext: HttpRequestContext = {
+      specPath,
+      baseUrl,
+      options,
+      enableTokenPassthrough,
+      hasEnvNotionToken,
+      dnsRebindingProtectionOptions,
+    }
 
     // Handle POST requests for client-to-server communication
     app.post('/mcp', async (req, res) => {
       try {
-        // Check for existing session ID
-        const sessionId = req.headers['mcp-session-id'] as string | undefined
-        let transport: StreamableHTTPServerTransport
-
-        if (sessionId && transports[sessionId]) {
-          // Reuse existing transport
-          transport = transports[sessionId]
-        } else if (!sessionId && isInitializeRequest(req.body)) {
-          // Resolve which Notion token this connection should authenticate with.
-          // When passthrough is off we leave this undefined so the proxy uses the
-          // startup env token (the original, single-integration behavior).
-          let perRequestHeaders: Record<string, string> | undefined
-          if (enableTokenPassthrough) {
-            const resolution = resolveNotionToken(req.headers, {
-              // Only mine the Authorization header for a Notion token when it
-              // isn't already reserved for the server's own gateway auth.
-              allowAuthorizationFallback: options.unsafeDisableAuth,
-            })
-            if (resolution.status === 'invalid') {
-              res.status(401).json({
-                jsonrpc: '2.0',
-                error: { code: -32001, message: `Unauthorized: ${resolution.reason}` },
-                id: null,
-              })
-              return
-            }
-            if (resolution.status === 'ok') {
-              perRequestHeaders = notionHeadersForToken(resolution.token)
-              console.log(`Initializing session with per-request Notion token ${redactToken(resolution.token)}`)
-            } else if (!hasEnvNotionToken) {
-              // Passthrough is on, no token was supplied, and there is no env
-              // token to fall back to — fail clearly instead of 401-ing later.
-              res.status(401).json({
-                jsonrpc: '2.0',
-                error: {
-                  code: -32001,
-                  message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header.`,
-                },
-                id: null,
-              })
-              return
-            }
-          }
-
-          // New initialization request
-          transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (sessionId) => {
-              // Store the transport by session ID
-              transports[sessionId] = transport
-            },
-            ...(dnsRebindingProtectionOptions ?? {}),
-          })
-
-          // Clean up transport when closed
-          transport.onclose = () => {
-            if (transport.sessionId) {
-              delete transports[transport.sessionId]
-            }
-          }
-
-          const proxy = await initProxy(specPath, baseUrl, perRequestHeaders)
-          await proxy.connect(transport)
-        } else {
-          // Invalid request
-          res.status(400).json({
-            jsonrpc: '2.0',
-            error: {
-              code: -32000,
-              message: 'Bad Request: No valid session ID provided',
-            },
-            id: null,
-          })
+        if (enableStatelessHttp) {
+          await handleStatelessPostRequest(req, res, requestContext)
           return
         }
 
-        // Handle the request
+        const transport = await getStatefulTransport(
+          req,
+          res,
+          transports,
+          requestContext,
+        )
+        if (!transport) {
+          return
+        }
+
         await transport.handleRequest(req, res, req.body)
       } catch (error) {
         console.error('Error handling MCP request:', error)
         if (!res.headersSent) {
-          res.status(500).json({
-            jsonrpc: '2.0',
-            error: {
-              code: -32603,
-              message: 'Internal server error',
-            },
-            id: null,
-          })
+          sendJsonRpcError(res, 500, -32603, 'Internal server error')
         }
       }
     })
 
     // Handle GET requests for server-to-client notifications via Streamable HTTP
     app.get('/mcp', async (req, res) => {
+      if (enableStatelessHttp) {
+        res.status(405).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Method not allowed: stateless HTTP mode accepts POST /mcp only',
+          },
+          id: null,
+        })
+        return
+      }
+
       const sessionId = req.headers['mcp-session-id'] as string | undefined
       if (!sessionId || !transports[sessionId]) {
         res.status(400).send('Invalid or missing session ID')
@@ -226,6 +305,18 @@ export async function startServer(args: string[] = process.argv) {
 
     // Handle DELETE requests for session termination
     app.delete('/mcp', async (req, res) => {
+      if (enableStatelessHttp) {
+        res.status(405).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Method not allowed: stateless HTTP mode accepts POST /mcp only',
+          },
+          id: null,
+        })
+        return
+      }
+
       const sessionId = req.headers['mcp-session-id'] as string | undefined
       if (!sessionId || !transports[sessionId]) {
         res.status(400).send('Invalid or missing session ID')
@@ -255,6 +346,9 @@ export async function startServer(args: string[] = process.argv) {
         console.log(
           `Notion token passthrough: Enabled (clients may send their own token via the '${NOTION_TOKEN_HEADER}' header)`,
         )
+      }
+      if (enableStatelessHttp) {
+        console.log('HTTP mode: Stateless (POST /mcp only; no MCP sessions are persisted)')
       }
       // Try to resolve the Notion integration link so users can manage their token
       const notionToken = process.env.NOTION_TOKEN
