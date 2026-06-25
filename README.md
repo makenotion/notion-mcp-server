@@ -345,7 +345,7 @@ When using Streamable HTTP transport, the server will be available at `http://12
 
 ##### Authentication
 
-The Streamable HTTP transport requires bearer token authentication for security. You have three options:
+The Streamable HTTP transport uses bearer token authentication by default for security. You have three options:
 
 ###### Option 1: Auto-generated token (only for development)
 
@@ -381,13 +381,19 @@ You can disable bearer token authentication only with the explicit unsafe flag:
 npx @notionhq/notion-mcp-server --transport http --unsafe-disable-auth
 ```
 
+If you need to allow additional hosts for unauthenticated HTTP, add them with `--allowed-hosts`:
+
+```bash
+npx @notionhq/notion-mcp-server --transport http --unsafe-disable-auth --allowed-hosts app.local,devbox.local
+```
+
 WARNING: `--unsafe-disable-auth` is unsafe. The server may be reachable to pages you visit via DNS rebinding. Only use it on an isolated network.
 
-When authentication is disabled, the server enables DNS rebinding protection by checking the `Host` and `Origin` headers against the configured local host and loopback hosts. The previous `--disable-auth` flag is still accepted as a deprecated alias, but it will print a warning.
+When authentication is disabled, the server enables DNS rebinding protection by checking the `Host` and `Origin` headers against the configured bind host, loopback hosts, and any extra hosts supplied with `--allowed-hosts`. The previous `--disable-auth` flag is still accepted as a deprecated alias, but it will print a warning.
 
 ##### Making HTTP requests
 
-All requests to the Streamable HTTP transport must include the bearer token in the Authorization header:
+When HTTP authentication is enabled, requests to the Streamable HTTP transport must include the bearer token in the `Authorization` header:
 
 ```bash
 # Example request
