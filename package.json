@@ -20,7 +20,7 @@
     "notion-mcp-server": "bin/cli.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.8.4",
     "express": "^4.21.2",
     "form-data": "^4.0.1",
@@ -46,6 +46,11 @@
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": {
+      "@hono/node-server": "^2.0.5"
+    }
   },
   "description": "Official MCP server for Notion API",
   "main": "index.js",
