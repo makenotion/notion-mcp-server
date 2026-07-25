@@ -345,7 +345,7 @@ When using Streamable HTTP transport, the server will be available at `http://12
 
 ##### Authentication
 
-The Streamable HTTP transport requires bearer token authentication for security. You have three options:
+The Streamable HTTP transport uses bearer token authentication by default for security. You have three options:
 
 ###### Option 1: Auto-generated token (only for development)
 
@@ -381,13 +381,19 @@ You can disable bearer token authentication only with the explicit unsafe flag:
 npx @notionhq/notion-mcp-server --transport http --unsafe-disable-auth
 ```
 
+If you need to allow additional hosts for unauthenticated HTTP, add them with `--allowed-hosts`:
+
+```bash
+npx @notionhq/notion-mcp-server --transport http --unsafe-disable-auth --allowed-hosts app.local,devbox.local
+```
+
 WARNING: `--unsafe-disable-auth` is unsafe. The server may be reachable to pages you visit via DNS rebinding. Only use it on an isolated network.
 
-When authentication is disabled, the server enables DNS rebinding protection by checking the `Host` and `Origin` headers against the configured local host and loopback hosts. The previous `--disable-auth` flag is still accepted as a deprecated alias, but it will print a warning.
+When authentication is disabled, the server enables DNS rebinding protection by checking the `Host` and `Origin` headers against the configured bind host, loopback hosts, and any extra hosts supplied with `--allowed-hosts`. The previous `--disable-auth` flag is still accepted as a deprecated alias, but it will print a warning.
 
 ##### Making HTTP requests
 
-All requests to the Streamable HTTP transport must include the bearer token in the Authorization header:
+When HTTP authentication is enabled, requests to the Streamable HTTP transport must include the bearer token in the `Authorization` header:
 
 ```bash
 # Example request
@@ -405,15 +411,15 @@ curl -H "Authorization: Bearer your-token-here" \
 By default the server authenticates to Notion with a single token baked in at
 startup, which locks one deployment to one Notion integration. To let a single
 deployment serve **multiple** integrations, enable token passthrough so each
-client supplies its own Notion integration token per connection:
+client supplies its own Notion integration token:
 
 ```bash
 # Enable per-request Notion tokens (flag or ENABLE_TOKEN_PASSTHROUGH=true)
 npx @notionhq/notion-mcp-server --transport http --enable-token-passthrough
 ```
 
-Clients then send their Notion token on the **initialize** request using the
-dedicated `Notion-Token` header:
+In the default stateful HTTP mode, clients send their Notion token on the
+**initialize** request using the dedicated `Notion-Token` header:
 
 ```bash
 curl -H "Authorization: Bearer <server-auth-token>" \
@@ -423,7 +429,7 @@ curl -H "Authorization: Bearer <server-auth-token>" \
      http://localhost:3000/mcp
 ```
 
-How the token is resolved for each connection, in order:
+How the token is resolved for each stateful connection, in order:
 
 1. The `Notion-Token` header (preferred — unambiguous, and works alongside the
    server's own `Authorization` gateway auth). If present it must be a valid
@@ -444,6 +450,26 @@ Notes:
 - This is a deliberate token-passthrough setup. Always deploy it over TLS, and
   prefer keeping the server's own bearer auth (`--auth-token`) enabled as a
   gateway in front of multi-tenant traffic.
+
+##### Stateless HTTP mode
+
+If you want HTTP requests to be fully stateless, start the server with
+`--stateless-http` (or `ENABLE_STATELESS_HTTP=true`):
+
+```bash
+npx @notionhq/notion-mcp-server --transport http --stateless-http --enable-token-passthrough
+```
+
+In stateless mode:
+
+- the server does not persist MCP sessions
+- only `POST /mcp` is accepted; `GET /mcp` and `DELETE /mcp` return `405`
+- when token passthrough is enabled, the client must send its Notion token on
+  **every** request via `Notion-Token` (or `Authorization: Bearer ntn_****`
+  when `--unsafe-disable-auth` frees that header for Notion auth)
+
+This mode is useful behind stateless gateways or load balancers where clients
+cannot rely on sticky in-memory MCP sessions.
 
 ### Examples
 
