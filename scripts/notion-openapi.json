@@ -1812,7 +1812,9 @@
         },
         "deprecated": false,
         "security": []
-      },
+      }
+    },
+    "/v1/databases/{data_source_id}": {
       "patch": {
         "summary": "Update a data source",
         "description": "Update properties of a data source",
@@ -1904,7 +1906,7 @@
         "security": []
       }
     },
-    "/v1/data_sources": {
+    "/v1/databases": {
       "post": {
         "summary": "Create a data source",
         "description": "Create a new data source (database)",
@@ -1924,15 +1926,23 @@
                 "type": "object",
                 "required": [
                   "parent",
-                  "properties"
+                  "initial_data_source"
                 ],
                 "properties": {
                   "parent": {
                     "$ref": "#/components/schemas/pageIdParentRequest"
                   },
-                  "properties": {
+                  "initial_data_source": {
                     "type": "object",
-                    "description": "Property schema of data source"
+                    "required": [
+                      "properties"
+                    ],
+                    "properties": {
+                      "properties": {
+                        "type": "object",
+                        "description": "Property schema of data source"
+                      }
+                    }
                   },
                   "title": {
                     "type": "array",

@@ -50,6 +50,7 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 - All database operations now use `data_source_id` instead of `database_id`
 - Search filter values changed from `["page", "database"]` to `["page", "data_source"]`
 - Page creation now supports both `page_id` and `database_id` parents (for data sources)
+- Data source creation payload now uses `initial_data_source.properties` instead of top-level `properties`
 
 ### Do I need to migrate?
 
@@ -61,7 +62,7 @@ If you have hardcoded tool names or prompts that reference the old database tool
 | -------------- | --------------- | ---------------- |
 | `post-database-query` | `query-data-source` | `database_id` → `data_source_id` |
 | `update-a-database` | `update-a-data-source` | `database_id` → `data_source_id` |
-| `create-a-database` | `create-a-data-source` | No change (uses `parent.page_id`) |
+| `create-a-database` | `create-a-data-source` | payload uses `initial_data_source.properties` |
 
 > **Note:** `retrieve-a-database` is still available and returns database metadata including the list of data source IDs. Use `retrieve-a-data-source` to get the schema and properties of a specific data source.
 
