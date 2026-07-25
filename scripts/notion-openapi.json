@@ -108,6 +108,7 @@
         ]
       },
       "parentRequest": {
+        "type": "object",
         "oneOf": [
           {
             "$ref": "#/components/schemas/pageIdParentRequest"
