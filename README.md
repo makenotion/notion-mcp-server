@@ -195,6 +195,33 @@ Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json
 
 For more information, see the [Copilot CLI documentation](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli).
 
+###### AdaL
+
+[AdaL](https://adalagent.ai/) is a terminal-based AI coding agent with full MCP support (HTTP and stdio transports). Add the Notion MCP server directly from the AdaL CLI:
+
+```bash
+/mcp add notionApi --command npx --args "-y,@notionhq/notion-mcp-server" --env "NOTION_TOKEN=ntn_****"
+```
+
+Alternatively, add the following to your project's `~/.adal/settings.json` under `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****"
+      }
+    }
+  }
+}
+```
+
+For more information, see the [AdaL docs](https://docs.sylph.ai/).
+
 ##### Using Docker
 
 There are two options for running the MCP server with Docker:
