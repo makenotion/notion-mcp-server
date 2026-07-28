@@ -56,7 +56,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/makenotion/notion-mcp-server.git"
+    "url": "git+https://github.com/makenotion/notion-mcp-server.git"
   },
   "author": "@notionhq",
   "bugs": {
