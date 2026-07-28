@@ -1,5 +1,7 @@
 # Notion MCP Server
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2Fmakenotion%2Fnotion-mcp-server.svg)](https://mcptoplist.com/server/glama%2Fmakenotion%2Fnotion-mcp-server)
+
 > [!NOTE]
 >
 > We’ve introduced **Notion MCP**, a remote MCP server with the following improvements:
