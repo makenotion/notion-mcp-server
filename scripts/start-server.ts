@@ -1,8 +1,8 @@
 import path from 'node:path'
 import { fileURLToPath } from 'url'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
+import { isInitializeRequest } from '@modelcontextprotocol/server'
+import { NodeStreamableHTTPServerTransport } from '@modelcontextprotocol/node'
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio'
 import { randomUUID, randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -113,7 +113,7 @@ export async function startServer(args: string[] = process.argv) {
     const hasEnvNotionToken = Boolean(process.env.NOTION_TOKEN || process.env.OPENAPI_MCP_HEADERS)
 
     // Map to store transports by session ID
-    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
+    const transports: { [sessionId: string]: NodeStreamableHTTPServerTransport } = {}
     const dnsRebindingProtectionOptions = getDnsRebindingProtectionOptions(options)
 
     // Handle POST requests for client-to-server communication
@@ -121,7 +121,7 @@ export async function startServer(args: string[] = process.argv) {
       try {
         // Check for existing session ID
         const sessionId = req.headers['mcp-session-id'] as string | undefined
-        let transport: StreamableHTTPServerTransport
+        let transport: NodeStreamableHTTPServerTransport
 
         if (sessionId && transports[sessionId]) {
           // Reuse existing transport
@@ -164,7 +164,7 @@ export async function startServer(args: string[] = process.argv) {
           }
 
           // New initialization request
-          transport = new StreamableHTTPServerTransport({
+          transport = new NodeStreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (sessionId) => {
               // Store the transport by session ID
