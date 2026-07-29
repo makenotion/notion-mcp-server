@@ -1,4 +1,4 @@
-import type { StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import type { StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/node'
 
 export const DEFAULT_HTTP_HOST = '127.0.0.1'
 
