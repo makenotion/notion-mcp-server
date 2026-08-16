@@ -1,5 +1,7 @@
 # Notion MCP Server
 
+[![context cost](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fathakur3%2Fmcp-context-cost%2Fmain%2Fbadges%2Fnotion.json)](https://athakur3.github.io/mcp-context-cost/METHODOLOGY)
+
 > [!NOTE]
 >
 > We’ve introduced **Notion MCP**, a remote MCP server with the following improvements:
