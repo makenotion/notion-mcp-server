@@ -1,21 +1,21 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
-import OpenAPIClientAxios from 'openapi-client-axios'
-import type { AxiosInstance } from 'axios'
-import FormData from 'form-data'
-import fs from 'fs'
-import { Headers } from './polyfill-headers'
-import { isFileUploadParameter } from '../openapi/file-upload'
+import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import OpenAPIClientAxios from "openapi-client-axios";
+import type { AxiosInstance } from "axios";
+import FormData from "form-data";
+import fs from "fs";
+import { Headers } from "./polyfill-headers";
+import { isFileUploadParameter } from "../openapi/file-upload";
 
 export type HttpClientConfig = {
-  baseUrl: string
-  headers?: Record<string, string>
-}
+  baseUrl: string;
+  headers?: Record<string, string>;
+};
 
 export type HttpClientResponse<T = any> = {
-  data: T
-  status: number
-  headers: Headers
-}
+  data: T;
+  status: number;
+  headers: Headers;
+};
 
 export class HttpClientError extends Error {
   constructor(
@@ -24,33 +24,36 @@ export class HttpClientError extends Error {
     public data: any,
     public headers?: Headers,
   ) {
-    super(`${status} ${message}`)
-    this.name = 'HttpClientError'
+    super(`${status} ${message}`);
+    this.name = "HttpClientError";
   }
 }
 
 export class HttpClient {
-  private api: Promise<AxiosInstance>
-  private client: OpenAPIClientAxios
-  private config: HttpClientConfig
-  private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document
+  private api: Promise<AxiosInstance>;
+  private client: OpenAPIClientAxios;
+  private config: HttpClientConfig;
+  private openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document;
 
-  constructor(config: HttpClientConfig, openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document) {
-    this.config = config
-    this.openApiSpec = openApiSpec
+  constructor(
+    config: HttpClientConfig,
+    openApiSpec: OpenAPIV3.Document | OpenAPIV3_1.Document,
+  ) {
+    this.config = config;
+    this.openApiSpec = openApiSpec;
     // @ts-expect-error
     this.client = new (OpenAPIClientAxios.default ?? OpenAPIClientAxios)({
       definition: openApiSpec,
       axiosConfigDefaults: {
         baseURL: config.baseUrl,
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'notion-mcp-server',
+          "Content-Type": "application/json",
+          "User-Agent": "notion-mcp-server",
           ...config.headers,
         },
       },
-    })
-    this.api = this.client.init()
+    });
+    this.api = this.client.init();
   }
 
   /**
@@ -60,19 +63,19 @@ export class HttpClient {
   private resolveParameter(
     param: OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject,
   ): OpenAPIV3.ParameterObject | null {
-    if (!('$ref' in param)) {
-      return param as OpenAPIV3.ParameterObject
+    if (!("$ref" in param)) {
+      return param as OpenAPIV3.ParameterObject;
     }
-    const ref = param.$ref
-    if (!ref.startsWith('#/')) {
-      return null
+    const ref = param.$ref;
+    if (!ref.startsWith("#/")) {
+      return null;
     }
-    let node: any = this.openApiSpec
-    for (const segment of ref.slice(2).split('/')) {
-      node = node?.[segment]
-      if (node === undefined) return null
+    let node: any = this.openApiSpec;
+    for (const segment of ref.slice(2).split("/")) {
+      node = node?.[segment];
+      if (node === undefined) return null;
     }
-    return node && node.name ? (node as OpenAPIV3.ParameterObject) : null
+    return node && node.name ? (node as OpenAPIV3.ParameterObject) : null;
   }
 
   /**
@@ -85,57 +88,68 @@ export class HttpClient {
    * API stays on `2025-09-03`. A header the caller configured globally (via
    * HttpClientConfig.headers) takes precedence and is left untouched.
    */
-  private buildDefaultHeaders(operation: OpenAPIV3.OperationObject): Record<string, string> {
-    const configured = new Set(Object.keys(this.config.headers ?? {}).map((key) => key.toLowerCase()))
-    const headers: Record<string, string> = {}
+  private buildDefaultHeaders(
+    operation: OpenAPIV3.OperationObject,
+  ): Record<string, string> {
+    const configured = new Set(
+      Object.keys(this.config.headers ?? {}).map((key) => key.toLowerCase()),
+    );
+    const headers: Record<string, string> = {};
     for (const param of operation.parameters ?? []) {
-      const resolved = this.resolveParameter(param)
-      if (!resolved || resolved.in !== 'header' || configured.has(resolved.name.toLowerCase())) {
-        continue
+      const resolved = this.resolveParameter(param);
+      if (
+        !resolved ||
+        resolved.in !== "header" ||
+        configured.has(resolved.name.toLowerCase())
+      ) {
+        continue;
       }
-      const schema = resolved.schema as OpenAPIV3.SchemaObject | undefined
+      const schema = resolved.schema as OpenAPIV3.SchemaObject | undefined;
       if (schema && schema.default !== undefined) {
-        headers[resolved.name] = String(schema.default)
+        headers[resolved.name] = String(schema.default);
       }
     }
-    return headers
+    return headers;
   }
 
-  private async prepareFileUpload(operation: OpenAPIV3.OperationObject, params: Record<string, any>): Promise<FormData | null> {
-    const fileParams = isFileUploadParameter(operation)
-    if (fileParams.length === 0) return null
+  private async prepareFileUpload(
+    operation: OpenAPIV3.OperationObject,
+    params: Record<string, any>,
+  ): Promise<FormData | null> {
+    const fileParams = isFileUploadParameter(operation);
+    if (fileParams.length === 0) return null;
 
-    const formData = new FormData()
+    const formData = new FormData();
 
     // Handle file uploads
     for (const param of fileParams) {
-      const filePath = params[param]
+      const filePath = params[param];
       if (!filePath) {
-        throw new Error(`File path must be provided for parameter: ${param}`)
+        throw new Error(`File path must be provided for parameter: ${param}`);
       }
       switch (typeof filePath) {
-        case 'string':
-          addFile(param, filePath)
-          break
-        case 'object':
-          if(Array.isArray(filePath)) {
-            let fileCount = 0
-            for(const file of filePath) {
-              addFile(param, file)
-              fileCount++
+        case "string":
+          addFile(param, filePath);
+          break;
+        case "object":
+          if (Array.isArray(filePath)) {
+            let fileCount = 0;
+            for (const file of filePath) {
+              addFile(param, file);
+              fileCount++;
             }
-            break
+            break;
           }
-          //deliberate fallthrough
+        //deliberate fallthrough
         default:
-          throw new Error(`Unsupported file type: ${typeof filePath}`)
+          throw new Error(`Unsupported file type: ${typeof filePath}`);
       }
       function addFile(name: string, filePath: string) {
-          try {
-            const fileStream = fs.createReadStream(filePath)
-            formData.append(name, fileStream)
+        try {
+          const fileStream = fs.createReadStream(filePath);
+          formData.append(name, fileStream);
         } catch (error) {
-          throw new Error(`Failed to read file at ${filePath}: ${error}`)
+          throw new Error(`Failed to read file at ${filePath}: ${error}`);
         }
       }
     }
@@ -143,11 +157,11 @@ export class HttpClient {
     // Add non-file parameters to form data
     for (const [key, value] of Object.entries(params)) {
       if (!fileParams.includes(key)) {
-        formData.append(key, value)
+        formData.append(key, value);
       }
     }
 
-    return formData
+    return formData;
   }
 
   /**
@@ -157,28 +171,28 @@ export class HttpClient {
     operation: OpenAPIV3.OperationObject & { method: string; path: string },
     params: Record<string, any> = {},
   ): Promise<HttpClientResponse<T>> {
-    const api = await this.api
-    const operationId = operation.operationId
+    const api = await this.api;
+    const operationId = operation.operationId;
     if (!operationId) {
-      throw new Error('Operation ID is required')
+      throw new Error("Operation ID is required");
     }
 
     // Handle file uploads if present
-    const formData = await this.prepareFileUpload(operation, params)
+    const formData = await this.prepareFileUpload(operation, params);
 
     // Separate parameters based on their location
-    const urlParameters: Record<string, any> = {}
-    const bodyParams: Record<string, any> = formData || { ...params }
+    const urlParameters: Record<string, any> = {};
+    const bodyParams: Record<string, any> = formData || { ...params };
 
     // Extract path and query parameters based on operation definition
     if (operation.parameters) {
       for (const param of operation.parameters) {
-        if ('name' in param && param.name && param.in) {
-          if (param.in === 'path' || param.in === 'query') {
+        if ("name" in param && param.name && param.in) {
+          if (param.in === "path" || param.in === "query") {
             if (params[param.name] !== undefined) {
-              urlParameters[param.name] = params[param.name]
+              urlParameters[param.name] = params[param.name];
               if (!formData) {
-                delete bodyParams[param.name]
+                delete bodyParams[param.name];
               }
             }
           }
@@ -190,61 +204,87 @@ export class HttpClient {
     if (!operation.requestBody && !formData) {
       for (const key in bodyParams) {
         if (bodyParams[key] !== undefined) {
-          urlParameters[key] = bodyParams[key]
-          delete bodyParams[key]
+          urlParameters[key] = bodyParams[key];
+          delete bodyParams[key];
         }
       }
     }
 
-    const operationFn = (api as any)[operationId]
+    const operationFn = (api as any)[operationId];
     if (!operationFn) {
-      throw new Error(`Operation ${operationId} not found`)
+      throw new Error(`Operation ${operationId} not found`);
     }
 
     try {
       // If we have form data, we need to set the correct headers
-      const hasBody = Object.keys(bodyParams).length > 0
+      const hasBody = Object.keys(bodyParams).length > 0;
       const headers = formData
         ? formData.getHeaders()
-        : { ...(hasBody ? { 'Content-Type': 'application/json' } : { 'Content-Type': null }) }
+        : {
+            ...(hasBody
+              ? { "Content-Type": "application/json" }
+              : { "Content-Type": null }),
+          };
       const requestConfig = {
         headers: {
           ...this.buildDefaultHeaders(operation),
           ...headers,
         },
+      };
+
+      // Unwrap the update-a-block payload to match the Notion API request shape
+      let requestBody = bodyParams;
+
+      if (
+        operationId === "update-a-block" &&
+        requestBody.type &&
+        typeof requestBody.type === "object" &&
+        !Array.isArray(requestBody.type)
+      ) {
+        const { type, ...rest } = requestBody;
+        requestBody = { ...rest, ...type };
       }
 
       // first argument is url parameters, second is body parameters
-      const response = await operationFn(urlParameters, hasBody ? bodyParams : undefined, requestConfig)
+      const response = await operationFn(
+        urlParameters,
+        hasBody ? requestBody : undefined,
+        requestConfig,
+      );
 
       // Convert axios headers to Headers object
-      const responseHeaders = new Headers()
+      const responseHeaders = new Headers();
       Object.entries(response.headers).forEach(([key, value]) => {
-        if (value) responseHeaders.append(key, value.toString())
-      })
+        if (value) responseHeaders.append(key, value.toString());
+      });
 
       return {
         data: response.data,
         status: response.status,
         headers: responseHeaders,
-      }
+      };
     } catch (error: any) {
       if (error.response) {
         // Only log errors in non-test environments to keep test output clean
-        if (process.env.NODE_ENV !== 'test') {
-          console.error('Error in http client', {
+        if (process.env.NODE_ENV !== "test") {
+          console.error("Error in http client", {
             status: error.response.status,
             statusText: error.response.statusText,
-          })
+          });
         }
-        const headers = new Headers()
+        const headers = new Headers();
         Object.entries(error.response.headers).forEach(([key, value]) => {
-          if (value) headers.append(key, value.toString())
-        })
+          if (value) headers.append(key, value.toString());
+        });
 
-        throw new HttpClientError(error.response.statusText || 'Request failed', error.response.status, error.response.data, headers)
+        throw new HttpClientError(
+          error.response.statusText || "Request failed",
+          error.response.status,
+          error.response.data,
+          headers,
+        );
       }
-      throw error
+      throw error;
     }
   }
 }
