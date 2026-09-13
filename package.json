@@ -22,7 +22,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.8.4",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
     "form-data": "^4.0.1",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
@@ -38,14 +38,14 @@
     "@types/js-yaml": "^4.0.9",
     "@types/json-schema": "^7.0.15",
     "@types/mustache": "^4.2.5",
-    "@types/node": "^20.17.16",
+    "@types/node": "^20.19.0",
     "@types/which": "^3.0.4",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.25.2",
     "multer": "1.4.5-lts.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "@modelcontextprotocol/sdk": {
