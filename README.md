@@ -3,8 +3,10 @@
 > [!NOTE]
 >
 > For the best experience, use **[Notion MCP](https://developers.notion.com/docs/mcp)**,
-> our official hosted MCP server. It is more than a hosted version of this project:
-> it is purpose-built to give AI agents **faster results using far fewer tokens**.
+> our official hosted MCP server. **This repository is a separate, self-hosted MCP
+> server implementation that is no longer actively maintained or supported. Please
+> use Notion MCP instead.** Notion MCP is purpose-built to give AI agents **faster
+> results using far fewer tokens**.
 >
 > Notion MCP can search your workspace and connected apps semantically, read and
 > edit pages in Markdown, and return only the most relevant context. That means less
