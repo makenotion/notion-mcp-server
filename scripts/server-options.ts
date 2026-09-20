@@ -10,6 +10,8 @@ export type ServerOptions = {
   unsafeDisableAuth: boolean
   usedDeprecatedDisableAuthFlag: boolean
   enableTokenPassthrough: boolean
+  enableStatelessHttp: boolean
+  allowedHosts: string[]
 }
 
 type DnsRebindingProtectionOptions = Pick<
@@ -26,6 +28,8 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
   let unsafeDisableAuth = false
   let usedDeprecatedDisableAuthFlag = false
   let enableTokenPassthrough = process.env.ENABLE_TOKEN_PASSTHROUGH === 'true'
+  let enableStatelessHttp = process.env.ENABLE_STATELESS_HTTP === 'true'
+  let allowedHosts: string[] = []
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--transport' && i + 1 < args.length) {
@@ -47,6 +51,16 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
       usedDeprecatedDisableAuthFlag = true
     } else if (args[i] === '--enable-token-passthrough') {
       enableTokenPassthrough = true
+    } else if (args[i] === '--stateless-http') {
+      enableStatelessHttp = true
+    } else if (args[i] === '--allowed-hosts' && i + 1 < args.length) {
+      allowedHosts.push(
+        ...args[i + 1]
+          .split(',')
+          .map((host) => host.trim())
+          .filter(Boolean),
+      )
+      i++
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(getHelpText())
       process.exit(0)
@@ -62,6 +76,8 @@ export function parseServerOptions(argv: string[] = process.argv): ServerOptions
     unsafeDisableAuth,
     usedDeprecatedDisableAuthFlag,
     enableTokenPassthrough,
+    enableStatelessHttp,
+    allowedHosts,
   }
 }
 
@@ -76,9 +92,12 @@ Options:
   --auth-token <token>     Bearer token for HTTP transport authentication (auto-generated if not provided)
   --unsafe-disable-auth    Disable bearer token authentication for HTTP transport. Unsafe; use only on isolated networks.
   --disable-auth           Deprecated alias for --unsafe-disable-auth
+  --allowed-hosts <hosts>  Extra comma-separated hosts allowed by DNS rebinding protection when auth is disabled
   --enable-token-passthrough  Let each HTTP client supply its own Notion token per request
                               via the 'Notion-Token' header, so one deployment can serve
                               multiple Notion integrations (default: off).
+  --stateless-http         Disable MCP session tracking for HTTP transport. Each POST request
+                               gets a fresh transport, and GET/DELETE /mcp are rejected (default: off).
   --help, -h               Show this help message
 
 Environment Variables:
@@ -86,6 +105,7 @@ Environment Variables:
   OPENAPI_MCP_HEADERS      JSON string with Notion API headers (alternative)
   AUTH_TOKEN               Bearer token for HTTP transport authentication (alternative to --auth-token)
   ENABLE_TOKEN_PASSTHROUGH Set to 'true' to enable per-request Notion tokens (alternative to --enable-token-passthrough)
+  ENABLE_STATELESS_HTTP    Set to 'true' to disable HTTP session tracking (alternative to --stateless-http)
 
 Examples:
   notion-mcp-server                                      # Use stdio transport (default)
@@ -97,6 +117,7 @@ Examples:
   notion-mcp-server --transport http --unsafe-disable-auth # Use Streamable HTTP transport without authentication
   AUTH_TOKEN=mytoken notion-mcp-server --transport http  # Use Streamable HTTP transport with auth token from env var
   notion-mcp-server --transport http --enable-token-passthrough # Per-request Notion token via the Notion-Token header
+  notion-mcp-server --transport http --stateless-http    # Stateless Streamable HTTP transport
 `
 }
 
@@ -133,8 +154,8 @@ export function getDnsRebindingProtectionOptions(
 
   return {
     enableDnsRebindingProtection: true,
-    allowedHosts: getAllowedHosts(options.host, options.port),
-    allowedOrigins: getAllowedOrigins(options.host, options.port),
+    allowedHosts: getAllowedHosts(options.host, options.port, options.allowedHosts),
+    allowedOrigins: getAllowedOrigins(options.host, options.port, options.allowedHosts),
   }
 }
 
@@ -142,21 +163,29 @@ export function getHttpServerDisplayUrl(options: ServerOptions): string {
   return `http://${formatHostForUrl(displayHostForBinding(options.host))}:${options.port}`
 }
 
-function getAllowedHosts(host: string, port: number): string[] {
+function getAllowedHosts(host: string, port: number, extraHosts: string[]): string[] {
   const allowedHosts = new Set<string>()
-  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', normalizeHostHeader(host)]) {
+  for (const allowedHost of getHostSources(host, extraHosts)) {
     allowedHosts.add(allowedHost)
     allowedHosts.add(`${allowedHost}:${port}`)
   }
   return [...allowedHosts]
 }
 
-function getAllowedOrigins(host: string, port: number): string[] {
+function getAllowedOrigins(host: string, port: number, extraHosts: string[]): string[] {
   const allowedOrigins = new Set<string>()
-  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', normalizeHostHeader(host)]) {
+  for (const allowedHost of getHostSources(host, extraHosts)) {
     allowedOrigins.add(`http://${formatHostForUrl(allowedHost)}:${port}`)
   }
   return [...allowedOrigins]
+}
+
+function getHostSources(host: string, extraHosts: string[]): string[] {
+  const normalizedHosts = new Set<string>()
+  for (const allowedHost of ['localhost', '127.0.0.1', '[::1]', host, ...extraHosts]) {
+    normalizedHosts.add(normalizeHostHeader(allowedHost))
+  }
+  return [...normalizedHosts]
 }
 
 function isLoopbackHost(host: string): boolean {
