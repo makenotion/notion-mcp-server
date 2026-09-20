@@ -14,8 +14,8 @@
 >
 > | Feature | Notion MCP (remote) | This project (local) |
 > | --- | :---: | :---: |
-> | **Fast, hosted experience** | ✅ No local server overhead | Runs and updates locally |
-> | **Token-efficient responses** | ✅ Optimized to reduce context and token costs | Limited |
+> | **Fast, hosted experience** | ✅ | Runs and updates locally |
+> | **Token-efficient responses** | ✅ | Limited |
 > | Powerful tools tailored for AI agents | ✅ | Basic API-derived tools |
 > | Semantic search across your Notion workspace | ✅ | Keyword search only |
 > | AI Connector search across connected apps | ✅ | Not available |
