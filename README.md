@@ -2,19 +2,19 @@
 
 > [!NOTE]
 >
-> For the best experience, use **[Notion MCP](https://developers.notion.com/docs/mcp)**,
+> For the best experience, use **[Remote Notion MCP](https://developers.notion.com/docs/mcp)**,
 > our official hosted MCP server. **This repository is a separate, self-hosted MCP
 > server implementation that is no longer actively maintained or supported. Please
-> use Notion MCP instead.** Notion MCP is purpose-built to give AI agents **faster
-> results using far fewer tokens**.
+> use Remote Notion MCP instead.** It is purpose-built to give AI agents
+> **faster results using far fewer tokens**.
 >
-> Notion MCP can search your workspace and connected apps semantically, read and
+> Remote Notion MCP can search your workspace and connected apps semantically, read and
 > edit pages in Markdown, and return only the most relevant context. That means less
 > time waiting, less context-window usage, and lower token costs. It also uses OAuth
 > and automatically respects each user's existing Notion permissions—without API
 > tokens, JSON configuration, manual page sharing, or a local server to maintain.
 >
-> | Feature | Notion MCP (remote) | This project (local) |
+> | Feature | Remote Notion MCP | This project (local) |
 > | --- | :---: | :---: |
 > | **Fast, hosted experience** | ✅ | Runs and updates locally |
 > | **Token-efficient responses** | ✅ | Limited |
@@ -26,9 +26,9 @@
 > | Respects each user's existing Notion permissions | ✅ | Manual integration permissions and page sharing |
 > | Active support and ongoing improvements | ✅ | Not actively supported |
 >
-> Learn more and get started at [Notion MCP documentation](https://developers.notion.com/docs/mcp).
+> Learn more and get started in the [Remote Notion MCP documentation](https://developers.notion.com/docs/mcp).
 >
-> We are prioritizing, and only providing active support for, **Notion MCP** (remote). As a result:
+> We are prioritizing, and only providing active support for, **Remote Notion MCP**. As a result:
 >
 > - We may sunset this local MCP server repository in the future.
 > - Issues and pull requests here are not actively monitored.
