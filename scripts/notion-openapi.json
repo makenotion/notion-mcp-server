@@ -1513,6 +1513,11 @@
         "summary": "Create comment",
         "description": "Creates a comment in a page or existing discussion thread.",
         "operationId": "create-a-comment",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
