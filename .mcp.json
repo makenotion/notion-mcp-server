@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "notion-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ]
+    }
+  }
+}
