@@ -1,6 +1,6 @@
 import { MCPProxy } from '../proxy'
 import { OpenAPIV3 } from 'openapi-types'
-import { HttpClient } from '../../client/http-client'
+import { HttpClient, HttpClientError } from '../../client/http-client'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
@@ -115,6 +115,40 @@ describe('MCPProxy', () => {
           },
         ],
       })
+    })
+
+    it('should set isError on a failed API call', async () => {
+      // A Notion API error must be flagged at the protocol level: an unset
+      // `isError` is assumed to be false, so callers would read the error body
+      // below as a successful result.
+      const errorBody = { object: 'error', code: 'object_not_found', message: 'Could not find page.' }
+      // `http-client` is auto-mocked, so the constructor body never runs —
+      // assign the fields the handler reads.
+      const apiError = new HttpClientError('Not Found', 404, errorBody)
+      Object.assign(apiError, { status: 404, data: errorBody })
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockRejectedValue(apiError)
+      ;(proxy as any).openApiLookup = {
+        'API-getTest': {
+          operationId: 'getTest',
+          responses: { '200': { description: 'Success' } },
+          method: 'get',
+          path: '/test',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      const result = await callToolHandler({
+        params: {
+          name: 'API-getTest',
+          arguments: {},
+        },
+      })
+
+      expect(result.isError).toBe(true)
+      expect(JSON.parse(result.content[0].text)).toMatchObject({ code: 'object_not_found' })
     })
 
     it('should throw error for non-existent operation', async () => {
