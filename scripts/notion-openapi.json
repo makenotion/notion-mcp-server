@@ -1255,6 +1255,21 @@
                     "type": "string",
                     "description": "The cover image of the new page, represented as a [file object](https://developers.notion.com/reference/file-object).",
                     "format": "json"
+                  },
+                  "template": {
+                    "type": "object",
+                    "description": "Template configuration for the new page. Use type 'default' to apply the data source's default template, or 'template_id' with a specific template ID. When using a template, 'children' cannot be specified.",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["none", "default", "template_id"],
+                        "description": "The template type. 'none' (default) creates a blank page, 'default' uses the data source's default template, 'template_id' uses a specific template."
+                      },
+                      "template_id": {
+                        "type": "string",
+                        "description": "The ID of the template to use. Required when type is 'template_id'. Can be obtained from List data source templates endpoint or copied from template URL."
+                      }
+                    }
                   }
                 }
               }
