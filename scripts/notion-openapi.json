@@ -40,40 +40,29 @@
     "schemas": {
       "richTextRequest": {
         "type": "object",
-        "required": [
-          "text"
-        ],
+        "required": ["text"],
         "properties": {
           "text": {
             "type": "object",
-            "required": [
-              "content"
-            ],
+            "required": ["content"],
             "properties": {
               "content": {
                 "type": "string"
               },
               "link": {
-                "type": [
-                  "object",
-                  "null"
-                ],
+                "type": ["object", "null"],
                 "properties": {
                   "url": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "url"
-                ]
+                "required": ["url"]
               }
             },
             "additionalProperties": false
           },
           "type": {
-            "enum": [
-              "text"
-            ],
+            "enum": ["text"],
             "type": "string"
           }
         },
@@ -87,9 +76,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "page_id"
-        ]
+        "required": ["page_id"]
       },
       "dataSourceIdParentRequest": {
         "type": "object",
@@ -103,9 +90,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "database_id"
-        ]
+        "required": ["database_id"]
       },
       "parentRequest": {
         "oneOf": [
@@ -122,9 +107,7 @@
                 "const": "workspace"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           }
         ]
       },
@@ -141,10 +124,7 @@
                 "format": "uuid"
               }
             },
-            "required": [
-              "type",
-              "page_id"
-            ]
+            "required": ["type", "page_id"]
           },
           {
             "type": "object",
@@ -157,10 +137,7 @@
                 "format": "uuid"
               }
             },
-            "required": [
-              "type",
-              "database_id"
-            ]
+            "required": ["type", "database_id"]
           },
           {
             "type": "object",
@@ -169,27 +146,19 @@
                 "const": "workspace"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           }
         ]
       },
       "sortObject": {
         "type": "object",
-        "required": [
-          "property",
-          "direction"
-        ],
+        "required": ["property", "direction"],
         "properties": {
           "property": {
             "type": "string"
           },
           "direction": {
-            "enum": [
-              "ascending",
-              "descending"
-            ],
+            "enum": ["ascending", "descending"],
             "type": "string"
           }
         }
@@ -209,14 +178,10 @@
               }
             },
             "additionalProperties": false,
-            "required": [
-              "rich_text"
-            ]
+            "required": ["rich_text"]
           },
           "type": {
-            "enum": [
-              "paragraph"
-            ],
+            "enum": ["paragraph"],
             "type": "string"
           }
         },
@@ -237,18 +202,57 @@
               }
             },
             "additionalProperties": false,
-            "required": [
-              "rich_text"
-            ]
+            "required": ["rich_text"]
           },
           "type": {
-            "enum": [
-              "bulleted_list_item"
-            ],
+            "enum": ["bulleted_list_item"],
             "type": "string"
           }
         },
         "additionalProperties": false
+      },
+      "paragraphBlockUpdate": {
+        "type": "object",
+        "properties": {
+          "paragraph": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          }
+        },
+        "additionalProperties": false,
+        "required": ["paragraph"]
+      },
+
+      "bulletedListItemBlockUpdate": {
+        "type": "object",
+        "properties": {
+          "bulleted_list_item": {
+            "type": "object",
+            "properties": {
+              "rich_text": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/richTextRequest"
+                },
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false,
+            "required": ["rich_text"]
+          }
+        },
+        "additionalProperties": false,
+        "required": ["bulleted_list_item"]
       },
       "blockObjectRequest": {
         "anyOf": [
@@ -587,10 +591,7 @@
                       "value": {
                         "type": "string",
                         "description": "The value of the property to filter the results by.  Possible values for object type include `page` or `data_source`.  **Limitation**: Currently the only filter allowed is `object` which will filter by type of object (either `page` or `data_source`)",
-                        "enum": [
-                          "page",
-                          "data_source"
-                        ]
+                        "enum": ["page", "data_source"]
                       },
                       "property": {
                         "type": "string",
@@ -756,9 +757,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "children"
-                ],
+                "required": ["children"],
                 "properties": {
                   "children": {
                     "type": "array",
@@ -900,19 +899,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "object",
-                    "description": "The [block object `type`](ref:block#block-object-keys) value with the properties to be updated. Currently only `text` (for supported block types) and `checked` (for `to_do` blocks) fields can be updated.",
-                    "properties": {}
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/blockObjectRequest"
                   },
-                  "archived": {
-                    "type": "boolean",
-                    "description": "Set to true to archive (delete) a block. Set to false to un-archive (restore) a block.",
-                    "default": true
+                  {
+                    "type": "object",
+                    "properties": {
+                      "archived": {
+                        "type": "boolean",
+                        "description": "Set to true to archive (delete) a block. Set to false to un-archive (restore) a block.",
+                        "default": true
+                      }
+                    }
                   }
-                }
+                ]
               }
             }
           }
@@ -1132,9 +1133,7 @@
                       }
                     },
                     "additionalProperties": false,
-                    "required": [
-                      "emoji"
-                    ]
+                    "required": ["emoji"]
                   },
                   "cover": {
                     "type": "object",
@@ -1148,20 +1147,14 @@
                           }
                         },
                         "additionalProperties": false,
-                        "required": [
-                          "url"
-                        ]
+                        "required": ["url"]
                       },
                       "type": {
-                        "enum": [
-                          "external"
-                        ],
+                        "enum": ["external"],
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "external"
-                    ],
+                    "required": ["external"],
                     "additionalProperties": false
                   }
                 }
@@ -1226,10 +1219,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "parent",
-                  "properties"
-                ],
+                "required": ["parent", "properties"],
                 "properties": {
                   "parent": {
                     "$ref": "#/components/schemas/parentRequest"
@@ -1518,17 +1508,12 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "parent",
-                  "rich_text"
-                ],
+                "required": ["parent", "rich_text"],
                 "properties": {
                   "parent": {
                     "type": "object",
                     "description": "The page that contains the comment",
-                    "required": [
-                      "page_id"
-                    ],
+                    "required": ["page_id"],
                     "properties": {
                       "page_id": {
                         "type": "string",
@@ -1540,15 +1525,11 @@
                     "type": "array",
                     "items": {
                       "type": "object",
-                      "required": [
-                        "text"
-                      ],
+                      "required": ["text"],
                       "properties": {
                         "text": {
                           "type": "object",
-                          "required": [
-                            "content"
-                          ],
+                          "required": ["content"],
                           "properties": {
                             "content": {
                               "type": "string",
@@ -1646,9 +1627,7 @@
         "summary": "Query a data source",
         "description": "Query a data source (database) using filters and sorts",
         "operationId": "query-data-source",
-        "tags": [
-          "Data sources"
-        ],
+        "tags": ["Data sources"],
         "parameters": [
           {
             "name": "data_source_id",
@@ -1755,9 +1734,7 @@
         "summary": "Retrieve a data source",
         "description": "Retrieve metadata and schema for a data source",
         "operationId": "retrieve-a-data-source",
-        "tags": [
-          "Data sources"
-        ],
+        "tags": ["Data sources"],
         "parameters": [
           {
             "name": "data_source_id",
@@ -1817,9 +1794,7 @@
         "summary": "Update a data source",
         "description": "Update properties of a data source",
         "operationId": "update-a-data-source",
-        "tags": [
-          "Data sources"
-        ],
+        "tags": ["Data sources"],
         "parameters": [
           {
             "name": "data_source_id",
@@ -1909,9 +1884,7 @@
         "summary": "Create a data source",
         "description": "Create a new data source (database)",
         "operationId": "create-a-data-source",
-        "tags": [
-          "Data sources"
-        ],
+        "tags": ["Data sources"],
         "parameters": [
           {
             "$ref": "#/components/parameters/notionVersion"
@@ -1922,10 +1895,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "parent",
-                  "properties"
-                ],
+                "required": ["parent", "properties"],
                 "properties": {
                   "parent": {
                     "$ref": "#/components/schemas/pageIdParentRequest"
@@ -1993,9 +1963,7 @@
         "summary": "List templates in a data source",
         "description": "List available templates for a data source",
         "operationId": "list-data-source-templates",
-        "tags": [
-          "Data sources"
-        ],
+        "tags": ["Data sources"],
         "parameters": [
           {
             "name": "data_source_id",
@@ -2072,9 +2040,7 @@
         "summary": "Retrieve a database",
         "description": "Retrieves a database object using the ID specified. Returns database metadata including the list of data source IDs contained in the database.",
         "operationId": "retrieve-a-database",
-        "tags": [
-          "Databases"
-        ],
+        "tags": ["Databases"],
         "parameters": [
           {
             "name": "database_id",
@@ -2136,9 +2102,7 @@
         "summary": "Move a page",
         "description": "Move a page to a different parent location",
         "operationId": "move-page",
-        "tags": [
-          "Pages"
-        ],
+        "tags": ["Pages"],
         "parameters": [
           {
             "name": "page_id",
@@ -2159,9 +2123,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "parent"
-                ],
+                "required": ["parent"],
                 "properties": {
                   "parent": {
                     "$ref": "#/components/schemas/movePageParentRequest"
@@ -2218,9 +2180,7 @@
         "summary": "Retrieve a page as Markdown",
         "description": "Retrieve the full content of a Notion page rendered as enhanced Markdown. Designed for agentic and developer tools that work natively with Markdown instead of the block JSON returned by Retrieve block children.",
         "operationId": "retrieve-page-markdown",
-        "tags": [
-          "Pages"
-        ],
+        "tags": ["Pages"],
         "parameters": [
           {
             "name": "page_id",
@@ -2403,9 +2363,7 @@
         "summary": "Update a page's content as Markdown",
         "description": "Update the content of a Notion page using enhanced Markdown. Prefer `replace_content` to overwrite the whole page or `update_content` for targeted find-and-replace edits.",
         "operationId": "update-page-markdown",
-        "tags": [
-          "Pages"
-        ],
+        "tags": ["Pages"],
         "parameters": [
           {
             "name": "page_id",
@@ -2434,9 +2392,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "type"
-                ],
+                "required": ["type"],
                 "description": "Specify exactly one edit operation. Set `type` to the operation name and provide the matching object.",
                 "properties": {
                   "type": {
@@ -2451,9 +2407,7 @@
                   },
                   "replace_content": {
                     "type": "object",
-                    "required": [
-                      "new_str"
-                    ],
+                    "required": ["new_str"],
                     "description": "Provide when type is `replace_content`. Replaces the entire page content.",
                     "properties": {
                       "new_str": {
@@ -2468,9 +2422,7 @@
                   },
                   "update_content": {
                     "type": "object",
-                    "required": [
-                      "content_updates"
-                    ],
+                    "required": ["content_updates"],
                     "description": "Provide when type is `update_content`. Applies targeted find-and-replace edits.",
                     "properties": {
                       "content_updates": {
@@ -2479,10 +2431,7 @@
                         "description": "Up to 100 find-and-replace edits applied in order.",
                         "items": {
                           "type": "object",
-                          "required": [
-                            "old_str",
-                            "new_str"
-                          ],
+                          "required": ["old_str", "new_str"],
                           "properties": {
                             "old_str": {
                               "type": "string",
@@ -2508,9 +2457,7 @@
                   "insert_content": {
                     "type": "object",
                     "deprecated": true,
-                    "required": [
-                      "content"
-                    ],
+                    "required": ["content"],
                     "description": "Deprecated. Provide when type is `insert_content`. Inserts Markdown at a position.",
                     "properties": {
                       "content": {
@@ -2526,10 +2473,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "start",
-                              "end"
-                            ]
+                            "enum": ["start", "end"]
                           }
                         },
                         "description": "Insert at the start or end of the page. Cannot be combined with after."
@@ -2539,10 +2483,7 @@
                   "replace_content_range": {
                     "type": "object",
                     "deprecated": true,
-                    "required": [
-                      "content",
-                      "content_range"
-                    ],
+                    "required": ["content", "content_range"],
                     "description": "Deprecated. Provide when type is `replace_content_range`. Replaces a selected range of Markdown.",
                     "properties": {
                       "content": {
