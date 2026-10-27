@@ -35,7 +35,6 @@ export class HttpSessionRegistry<T extends ClosableTransport> {
     if (!entry) {
       return undefined
     }
-    entry.lastSeen = this.now()
     entry.openResponses++
     response.on('close', () => {
       entry.openResponses--
