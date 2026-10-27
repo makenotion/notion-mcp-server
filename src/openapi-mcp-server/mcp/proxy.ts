@@ -1,11 +1,8 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, JSONRPCResponse, ListToolsRequestSchema, Tool } from '@modelcontextprotocol/sdk/types.js'
+import { Server, JSONRPCResultResponse, Tool, Transport } from '@modelcontextprotocol/server'
 import { JSONSchema7 as IJsonSchema } from 'json-schema'
 import { OpenAPIToMCPConverter } from '../openapi/parser'
 import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
   put?: OpenAPIV3.OperationObject
@@ -161,7 +158,7 @@ export class MCPProxy {
 
   private setupHandlers() {
     // Handle tool listing
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler('tools/list', async () => {
       const tools: Tool[] = []
 
       // Add methods as separate tools to match the MCP format
@@ -193,7 +190,7 @@ export class MCPProxy {
     })
 
     // Handle tool calling
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler('tools/call', async (request) => {
       const { name, arguments: params } = request.params
 
       // Find the operation in OpenAPI spec
