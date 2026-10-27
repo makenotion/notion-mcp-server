@@ -21,6 +21,7 @@ import {
   getUnsafeAuthWarnings,
   parseServerOptions,
 } from './server-options'
+import { HttpSessionRegistry, SESSION_SWEEP_INTERVAL_MS } from './http-sessions'
 
 export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
@@ -112,9 +113,20 @@ export async function startServer(args: string[] = process.argv) {
     const enableTokenPassthrough = options.enableTokenPassthrough
     const hasEnvNotionToken = Boolean(process.env.NOTION_TOKEN || process.env.OPENAPI_MCP_HEADERS)
 
-    // Map to store transports by session ID
-    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {}
+    const sessions = new HttpSessionRegistry<StreamableHTTPServerTransport>()
+    setInterval(() => sessions.evictIdle(), SESSION_SWEEP_INTERVAL_MS).unref()
     const dnsRebindingProtectionOptions = getDnsRebindingProtectionOptions(options)
+
+    const sendSessionNotFound = (res: express.Response) => {
+      res.status(404).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32001,
+          message: 'Session not found',
+        },
+        id: null,
+      })
+    }
 
     // Handle POST requests for client-to-server communication
     app.post('/mcp', async (req, res) => {
@@ -123,10 +135,14 @@ export async function startServer(args: string[] = process.argv) {
         const sessionId = req.headers['mcp-session-id'] as string | undefined
         let transport: StreamableHTTPServerTransport
 
-        if (sessionId && transports[sessionId]) {
-          // Reuse existing transport
-          transport = transports[sessionId]
-        } else if (!sessionId && isInitializeRequest(req.body)) {
+        if (sessionId) {
+          const existing = sessions.attach(sessionId, res)
+          if (!existing) {
+            sendSessionNotFound(res)
+            return
+          }
+          transport = existing
+        } else if (isInitializeRequest(req.body)) {
           // Resolve which Notion token this connection should authenticate with.
           // When passthrough is off we leave this undefined so the proxy uses the
           // startup env token (the original, single-integration behavior).
@@ -167,16 +183,14 @@ export async function startServer(args: string[] = process.argv) {
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (sessionId) => {
-              // Store the transport by session ID
-              transports[sessionId] = transport
+              sessions.add(sessionId, transport)
             },
             ...(dnsRebindingProtectionOptions ?? {}),
           })
 
-          // Clean up transport when closed
           transport.onclose = () => {
             if (transport.sessionId) {
-              delete transports[transport.sessionId]
+              sessions.delete(transport.sessionId)
             }
           }
 
@@ -215,24 +229,32 @@ export async function startServer(args: string[] = process.argv) {
     // Handle GET requests for server-to-client notifications via Streamable HTTP
     app.get('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
-      if (!sessionId || !transports[sessionId]) {
+      if (!sessionId) {
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
-      const transport = transports[sessionId]
+
+      const transport = sessions.attach(sessionId, res)
+      if (!transport) {
+        sendSessionNotFound(res)
+        return
+      }
       await transport.handleRequest(req, res)
     })
 
     // Handle DELETE requests for session termination
     app.delete('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
-      if (!sessionId || !transports[sessionId]) {
+      if (!sessionId) {
         res.status(400).send('Invalid or missing session ID')
         return
       }
-      
-      const transport = transports[sessionId]
+
+      const transport = sessions.attach(sessionId, res)
+      if (!transport) {
+        sendSessionNotFound(res)
+        return
+      }
       await transport.handleRequest(req, res)
     })
 
