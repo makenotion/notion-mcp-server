@@ -22,8 +22,9 @@ not reproduce:
   and [#208](https://github.com/makenotion/notion-mcp-server/issues/208).
 - `readOnly` / `destructive` tool annotations derived from the HTTP method
   (`proxy.ts`).
-- Multipart/file-upload operations mapped to local-file-path string params
-  (`parser.ts` binary handling, `file-upload.ts`).
+- File-upload operations are rejected by `client/http-client.ts`. Adding upload
+  support requires an explicit file-access policy; schema changes alone must not
+  enable local filesystem reads.
 - 64-char tool-name truncation with a uniqueness suffix (`parser.ts`,
   `ensureUniqueName`).
 
