@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_HTTP_HOST,
   getDnsRebindingProtectionOptions,
+  getHelpText,
   getHttpServerDisplayUrl,
   getUnsafeAuthWarnings,
   parseServerOptions,
@@ -55,6 +56,32 @@ describe('server options', () => {
     expect(deprecatedOptions.usedDeprecatedDisableAuthFlag).toBe(true)
   })
 
+  it('parses extra allowed hosts from a comma-separated flag', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--allowed-hosts',
+      ' app.local,devbox.local,, app.local ',
+    ])
+
+    expect(options.allowedHosts).toEqual(['app.local', 'devbox.local', 'app.local'])
+  })
+
+  it('appends extra allowed hosts across repeated flags', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--allowed-hosts',
+      'app.local,devbox.local',
+      '--allowed-hosts',
+      'admin.local',
+    ])
+
+    expect(options.allowedHosts).toEqual(['app.local', 'devbox.local', 'admin.local'])
+  })
+
   it('enables DNS rebinding protection when HTTP auth is disabled', () => {
     const options = parseServerOptions([
       ...argv,
@@ -79,10 +106,85 @@ describe('server options', () => {
     expect(dnsOptions.allowedOrigins).toContain('http://[::1]:4321')
   })
 
+  it('adds extra hosts to DNS rebinding protection host and origin allowlists', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--port',
+      '4321',
+      '--unsafe-disable-auth',
+      '--allowed-hosts',
+      ' app.local,::1,app.local ',
+    ])
+
+    const dnsOptions = getDnsRebindingProtectionOptions(options)
+    if (!dnsOptions) {
+      throw new Error('Expected DNS rebinding protection options')
+    }
+    const { allowedHosts } = dnsOptions
+    if (!allowedHosts) {
+      throw new Error('Expected DNS rebinding protection allowed hosts')
+    }
+
+    expect(allowedHosts).toContain('app.local')
+    expect(allowedHosts).toContain('app.local:4321')
+    expect(dnsOptions.allowedOrigins).toContain('http://app.local:4321')
+    expect(allowedHosts.filter((host) => host === '[::1]')).toHaveLength(1)
+    expect(allowedHosts.filter((host) => host === '[::1]:4321')).toHaveLength(1)
+  })
+
   it('keeps DNS rebinding protection off when HTTP auth is enabled', () => {
     const options = parseServerOptions([...argv, '--transport', 'http'])
 
     expect(getDnsRebindingProtectionOptions(options)).toBeUndefined()
+  })
+
+  it('does not enable DNS rebinding protection when allowed hosts are set but auth stays enabled', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--allowed-hosts',
+      'app.local',
+    ])
+
+    expect(getDnsRebindingProtectionOptions(options)).toBeUndefined()
+  })
+
+  it('documents the allowed hosts flag in the help text', () => {
+    expect(getHelpText()).toContain('--allowed-hosts <hosts>')
+  })
+
+  it('parses stateless HTTP mode from the CLI flag', () => {
+    const options = parseServerOptions([
+      ...argv,
+      '--transport',
+      'http',
+      '--stateless-http',
+    ])
+
+    expect(options.enableStatelessHttp).toBe(true)
+  })
+
+  it('reads stateless HTTP mode from the environment', () => {
+    const original = process.env.ENABLE_STATELESS_HTTP
+    process.env.ENABLE_STATELESS_HTTP = 'true'
+
+    try {
+      const options = parseServerOptions([...argv, '--transport', 'http'])
+      expect(options.enableStatelessHttp).toBe(true)
+    } finally {
+      if (original === undefined) {
+        delete process.env.ENABLE_STATELESS_HTTP
+      } else {
+        process.env.ENABLE_STATELESS_HTTP = original
+      }
+    }
+  })
+
+  it('documents stateless HTTP mode in the help text', () => {
+    expect(getHelpText()).toContain('--stateless-http')
   })
 
   it('warns clearly for unsafe auth disabling', () => {

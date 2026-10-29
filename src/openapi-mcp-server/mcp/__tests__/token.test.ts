@@ -5,6 +5,7 @@ import {
   isNotionToken,
   notionHeadersForToken,
   redactToken,
+  resolveNotionHeadersForRequest,
   resolveNotionToken,
 } from '../token'
 
@@ -109,5 +110,63 @@ describe('redactToken', () => {
     expect(redacted.startsWith('ntn_')).toBe(true)
     expect(redacted).not.toContain('aaaa')
     expect(redacted).toContain(String(NTN.length))
+  })
+})
+
+describe('resolveNotionHeadersForRequest', () => {
+  const headers = (h: IncomingHttpHeaders) => h
+
+  it('uses the request token when passthrough is enabled', () => {
+    const result = resolveNotionHeadersForRequest(headers({ [NOTION_TOKEN_HEADER]: NTN }), {
+      enableTokenPassthrough: true,
+      allowAuthorizationFallback: false,
+      hasEnvNotionToken: true,
+      requireExplicitToken: false,
+    })
+
+    expect(result).toEqual({
+      status: 'ok',
+      headers: { Authorization: `Bearer ${NTN}` },
+      token: NTN,
+    })
+  })
+
+  it('falls back to the env token in stateful passthrough mode when no request token is sent', () => {
+    const result = resolveNotionHeadersForRequest(headers({}), {
+      enableTokenPassthrough: true,
+      allowAuthorizationFallback: false,
+      hasEnvNotionToken: true,
+      requireExplicitToken: false,
+    })
+
+    expect(result).toEqual({ status: 'ok' })
+  })
+
+  it('requires an explicit token in stateless passthrough mode', () => {
+    const result = resolveNotionHeadersForRequest(headers({}), {
+      enableTokenPassthrough: true,
+      allowAuthorizationFallback: false,
+      hasEnvNotionToken: true,
+      requireExplicitToken: true,
+    })
+
+    expect(result).toEqual({
+      status: 'error',
+      message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header on every request.`,
+    })
+  })
+
+  it('returns an error when passthrough is enabled and no token source exists', () => {
+    const result = resolveNotionHeadersForRequest(headers({}), {
+      enableTokenPassthrough: true,
+      allowAuthorizationFallback: false,
+      hasEnvNotionToken: false,
+      requireExplicitToken: false,
+    })
+
+    expect(result).toEqual({
+      status: 'error',
+      message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header.`,
+    })
   })
 })

@@ -65,6 +65,10 @@ export type TokenResolution =
   | { status: 'invalid'; reason: string }
   | { status: 'absent' }
 
+export type RequestHeadersResolution =
+  | { status: 'ok'; headers?: Record<string, string>; token?: string }
+  | { status: 'error'; message: string }
+
 function firstHeaderValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
@@ -111,6 +115,60 @@ export function resolveNotionToken(
   }
 
   return { status: 'absent' }
+}
+
+export function resolveNotionHeadersForRequest(
+  headers: IncomingHttpHeaders,
+  {
+    enableTokenPassthrough,
+    allowAuthorizationFallback,
+    hasEnvNotionToken,
+    requireExplicitToken,
+  }: {
+    enableTokenPassthrough: boolean
+    allowAuthorizationFallback: boolean
+    hasEnvNotionToken: boolean
+    requireExplicitToken: boolean
+  },
+): RequestHeadersResolution {
+  if (!enableTokenPassthrough) {
+    return { status: 'ok' }
+  }
+
+  const resolution = resolveNotionToken(headers, {
+    allowAuthorizationFallback,
+  })
+
+  if (resolution.status === 'invalid') {
+    return {
+      status: 'error',
+      message: `Unauthorized: ${resolution.reason}`,
+    }
+  }
+
+  if (resolution.status === 'ok') {
+    return {
+      status: 'ok',
+      headers: notionHeadersForToken(resolution.token),
+      token: resolution.token,
+    }
+  }
+
+  if (requireExplicitToken) {
+    return {
+      status: 'error',
+      message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header on every request.`,
+    }
+  }
+
+  if (!hasEnvNotionToken) {
+    return {
+      status: 'error',
+      message: `Unauthorized: missing Notion token. Provide one via the '${NOTION_TOKEN_HEADER}' header.`,
+    }
+  }
+
+  return { status: 'ok' }
 }
 
 /**
