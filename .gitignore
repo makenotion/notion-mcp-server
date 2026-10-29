@@ -10,3 +10,8 @@ bin/
 .cursor
 
 .DS_Store
+
+# ONIX hardening
+.env
+.env.*
+*.bak*
