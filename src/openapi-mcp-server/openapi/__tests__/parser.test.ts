@@ -1065,40 +1065,8 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
                   type: 'object',
                   properties: {},
                   required: [],
-                  $defs: {
-                    A: {
-                      type: 'object',
-                      description: 'A schema description',
-                      additionalProperties: true,
-                      properties: {
-                        name: {
-                          type: 'string',
-                          description: 'Name of A',
-                        },
-                        b: {
-                          description: 'B property in A',
-                          $ref: '#/$defs/B',
-                        },
-                      },
-                      required: ['name', 'b'],
-                    },
-                    B: {
-                      type: 'object',
-                      description: 'B schema description',
-                      additionalProperties: true,
-                      properties: {
-                        title: {
-                          type: 'string',
-                          description: 'Title of B',
-                        },
-                        a: {
-                          description: 'A property in B',
-                          $ref: '#/$defs/A',
-                        },
-                      },
-                      required: ['title', 'a'],
-                    },
-                  },
+                  // No parameter references A or B, so the input schema carries no definitions.
+                  $defs: {},
                 },
                 returnSchema: {
                   $ref: '#/$defs/A',
@@ -1383,67 +1351,8 @@ describe('OpenAPIToMCPConverter - Additional Complex Tests', () => {
                   type: 'object',
                   properties: {},
                   required: [],
-                  $defs: {
-                    Base: {
-                      type: 'object',
-                      description: 'Base schema description',
-                      additionalProperties: true,
-                      properties: {
-                        baseName: {
-                          type: 'string',
-                          description: 'Name in the base schema',
-                        },
-                      },
-                    },
-                    C: {
-                      description: 'C schema description',
-                      allOf: [{ $ref: '#/$defs/Base' }, { $ref: '#/$defs/D' }, { $ref: '#/$defs/E' }],
-                    },
-                    D: {
-                      type: 'object',
-                      additionalProperties: true,
-                      description: 'D schema description',
-                      properties: {
-                        dProp: {
-                          type: 'integer',
-                          description: 'D property integer',
-                        },
-                      },
-                    },
-                    E: {
-                      type: 'object',
-                      additionalProperties: true,
-                      description: 'E schema description',
-                      properties: {
-                        choice: {
-                          description: 'One of these choices',
-                          oneOf: [{ $ref: '#/$defs/F' }, { $ref: '#/$defs/G' }],
-                        },
-                      },
-                    },
-                    F: {
-                      type: 'object',
-                      additionalProperties: true,
-                      description: 'F schema description',
-                      properties: {
-                        fVal: {
-                          type: 'boolean',
-                          description: 'Boolean in F',
-                        },
-                      },
-                    },
-                    G: {
-                      type: 'object',
-                      additionalProperties: true,
-                      description: 'G schema description',
-                      properties: {
-                        gVal: {
-                          type: 'string',
-                          description: 'String in G',
-                        },
-                      },
-                    },
-                  },
+                  // No parameter references a component schema, so the input schema carries no definitions.
+                  $defs: {},
                 },
                 returnSchema: {
                   $ref: '#/$defs/C',

@@ -8,6 +8,61 @@ type NewToolMethod = {
   returnSchema?: IJsonSchema
 }
 
+const DEFS_REF_PREFIX = '#/$defs/'
+
+/**
+ * Add the name of every `$defs` entry referenced anywhere inside `node` to `found`.
+ * Component names are limited to `[a-zA-Z0-9._-]` by OpenAPI, so a reference needs
+ * no JSON Pointer unescaping.
+ */
+function collectDefsRefs(node: unknown, found: Set<string>): void {
+  if (Array.isArray(node)) {
+    for (const item of node) collectDefsRefs(item, found)
+    return
+  }
+  if (node && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === '$ref' && typeof value === 'string') {
+        if (value.startsWith(DEFS_REF_PREFIX)) {
+          found.add(value.slice(DEFS_REF_PREFIX.length).split('/')[0]!)
+        }
+      } else {
+        collectDefsRefs(value, found)
+      }
+    }
+  }
+}
+
+/**
+ * Keep in `schema.$defs` only the definitions the schema can reach, directly or
+ * through other definitions. Every tool is built with all of the spec's component
+ * schemas, so without this a read tool such as `retrieve-a-block` is served with the
+ * block, rich text and parent request schemas it never uses, and every client pays for
+ * their size on each tool listing.
+ */
+function pruneUnreferencedDefs(schema: IJsonSchema): void {
+  const defs = schema.$defs
+  if (!defs) return
+
+  const { $defs: _defs, ...rest } = schema
+  const reachable = new Set<string>()
+  const pending = new Set<string>()
+  collectDefsRefs(rest, pending)
+  while (pending.size > 0) {
+    const name = pending.values().next().value as string
+    pending.delete(name)
+    if (reachable.has(name)) continue
+    reachable.add(name)
+    const referenced = new Set<string>()
+    collectDefsRefs(defs[name], referenced)
+    for (const ref of referenced) {
+      if (!reachable.has(ref)) pending.add(ref)
+    }
+  }
+
+  schema.$defs = Object.fromEntries(Object.entries(defs).filter(([name]) => reachable.has(name)))
+}
+
 export class OpenAPIToMCPConverter {
   private schemaCache: Record<string, IJsonSchema> = {}
   private nameCounter: number = 0
@@ -325,6 +380,8 @@ export class OpenAPIToMCPConverter {
         }
       }
     }
+
+    pruneUnreferencedDefs(inputSchema)
 
     // Build description including error responses
     let description = operation.summary || operation.description || ''
