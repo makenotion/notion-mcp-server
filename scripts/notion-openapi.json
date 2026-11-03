@@ -307,6 +307,7 @@
           {
             "name": "user_id",
             "in": "path",
+            "description": "Identifier for a Notion user",
             "required": true,
             "schema": {
               "type": "string",
@@ -1232,7 +1233,8 @@
                 ],
                 "properties": {
                   "parent": {
-                    "$ref": "#/components/schemas/parentRequest"
+                    "$ref": "#/components/schemas/parentRequest",
+                    "description": "The parent of the new page: a page (page_id), a database (database_id) or the workspace."
                   },
                   "properties": {
                     "description": "The property values for the new page. The keys are the names or IDs of the property and the values are property values.",
@@ -1538,6 +1540,7 @@
                   },
                   "rich_text": {
                     "type": "array",
+                    "description": "The content of the comment, as an array of rich text objects.",
                     "items": {
                       "type": "object",
                       "required": [
@@ -1691,10 +1694,12 @@
                     }
                   },
                   "start_cursor": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results."
                   },
                   "page_size": {
                     "type": "integer",
+                    "description": "The number of items from the full list desired in the response. Maximum: 100",
                     "default": 100
                   },
                   "archived": {
@@ -1928,7 +1933,8 @@
                 ],
                 "properties": {
                   "parent": {
-                    "$ref": "#/components/schemas/pageIdParentRequest"
+                    "$ref": "#/components/schemas/pageIdParentRequest",
+                    "description": "The parent page of the new data source."
                   },
                   "properties": {
                     "type": "object",
@@ -2009,6 +2015,7 @@
           {
             "name": "start_cursor",
             "in": "query",
+            "description": "If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.",
             "schema": {
               "type": "string"
             }
@@ -2016,6 +2023,7 @@
           {
             "name": "page_size",
             "in": "query",
+            "description": "The number of items from the full list desired in the response. Maximum: 100",
             "schema": {
               "type": "integer",
               "default": 100
@@ -2164,7 +2172,8 @@
                 ],
                 "properties": {
                   "parent": {
-                    "$ref": "#/components/schemas/movePageParentRequest"
+                    "$ref": "#/components/schemas/movePageParentRequest",
+                    "description": "The new parent of the page."
                   }
                 }
               }
