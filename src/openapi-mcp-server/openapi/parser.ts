@@ -97,7 +97,12 @@ export class OpenAPIToMCPConverter {
       const binaryDesc = 'absolute paths to local files'
       result.description = schema.description ? `${schema.description} (${binaryDesc})` : binaryDesc
     } else {
-      if (schema.format) {
+      // OpenAPI uses format "json" to mean a string that holds JSON. That token is
+      // not a JSON Schema format. The installed MCP SDK validator warns on it, and
+      // a strict Ajv client throws while compiling the tool. Nothing in this server
+      // reads the annotation; unwrapJsonString still accepts the string. Other
+      // formats, including ones this Ajv build does not know, stay as the spec wrote them.
+      if (schema.format && schema.format !== 'json') {
         result.format = schema.format
       }
       if (schema.description) {
