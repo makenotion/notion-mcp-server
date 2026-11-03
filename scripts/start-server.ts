@@ -21,6 +21,7 @@ import {
   getUnsafeAuthWarnings,
   parseServerOptions,
 } from './server-options'
+import { exitOnSignals, removeFileOnExit } from './shutdown'
 
 export async function startServer(args: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
@@ -31,6 +32,8 @@ export async function startServer(args: string[] = process.argv) {
 
   const options = parseServerOptions(args)
   const transport = options.transport
+
+  exitOnSignals()
 
   if (transport === 'stdio') {
     // Use stdio transport (default)
@@ -51,6 +54,7 @@ export async function startServer(args: string[] = process.argv) {
         // Write auto-generated token to a file with restricted permissions instead of logging it
         authTokenFilePath = path.join(os.tmpdir(), `.notion-mcp-auth-token-${process.pid}`)
         fs.writeFileSync(authTokenFilePath, authToken, { mode: 0o600 })
+        removeFileOnExit(authTokenFilePath)
         console.log(`Generated auth token written to: ${authTokenFilePath}`)
       }
     }
