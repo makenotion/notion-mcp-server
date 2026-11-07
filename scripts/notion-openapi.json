@@ -1907,7 +1907,7 @@
     "/v1/data_sources": {
       "post": {
         "summary": "Create a data source",
-        "description": "Create a new data source (database)",
+        "description": "Create a new data source",
         "operationId": "create-a-data-source",
         "tags": [
           "Data sources"
@@ -2720,6 +2720,164 @@
                     "status": {
                       "type": "integer",
                       "example": 409
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/v1/databases": {
+      "post": {
+        "summary": "Create a database",
+        "operationId": "create-database",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "parent"
+                ],
+                "properties": {
+                  "parent": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "page_id",
+                              "workspace"
+                            ],
+                            "description": "The type of parent."
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ]
+                      },
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "title": "Page Id",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "page_id",
+                                "description": "Always `page_id`"
+                              },
+                              "page_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "page_id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "title": "Workspace",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "workspace",
+                                "description": "Always `workspace`"
+                              },
+                              "workspace": {
+                                "type": "boolean",
+                                "const": true,
+                                "description": "Always `true`"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "workspace"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "title": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/richTextRequest"
+                    },
+                    "maxItems": 100,
+                    "description": "The title of the database."
+                  },
+                  "description": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/richTextRequest"
+                    },
+                    "maxItems": 100,
+                    "description": "The description of the database."
+                  },
+                  "is_inline": {
+                    "type": "boolean",
+                    "description": "Whether the database should be displayed inline in the parent page. Defaults to false."
+                  },
+                  "initial_data_source": {
+                    "type": "object",
+                    "description": "Initial data source configuration for the database.",
+                    "properties": {
+                      "properties": {
+                        "type": "object",
+                        "description": "Property schema for the initial data source, if you'd like to create one."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
                     },
                     "code": {
                       "type": "string"
