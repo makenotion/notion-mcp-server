@@ -1,0 +1,21 @@
+{
+  "name": "notion-mcp-server",
+  "version": "0.1.0",
+  "description": "Official Notion MCP Server",
+  "author": {
+    "name": "makenotion",
+    "url": "https://github.com/makenotion"
+  },
+  "homepage": "https://github.com/makenotion/notion-mcp-server",
+  "repository": "https://github.com/makenotion/notion-mcp-server",
+  "keywords": ["mcp", "codex", "notion", "api"],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Notion MCP Server",
+    "shortDescription": "Official Notion MCP Server",
+    "longDescription": "Official Notion MCP Server",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/makenotion/notion-mcp-server"
+  }
+}
