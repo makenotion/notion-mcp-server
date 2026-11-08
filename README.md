@@ -76,11 +76,11 @@ This project implements an [MCP server](https://spec.modelcontextprotocol.io/) f
 
 If you have hardcoded tool names or prompts that reference the old database tools, update them to use the new data source tools:
 
-| Old Tool (v1.x) | New Tool (v2.0) | Parameter Change |
-| -------------- | --------------- | ---------------- |
-| `post-database-query` | `query-data-source` | `database_id` → `data_source_id` |
-| `update-a-database` | `update-a-data-source` | `database_id` → `data_source_id` |
-| `create-a-database` | `create-a-data-source` | No change (uses `parent.page_id`) |
+| Old Tool (v1.x)       | New Tool (v2.0)        | Parameter Change                  |
+| --------------------- | ---------------------- | --------------------------------- |
+| `post-database-query` | `query-data-source`    | `database_id` → `data_source_id`  |
+| `update-a-database`   | `update-a-data-source` | `database_id` → `data_source_id`  |
+| `create-a-database`   | `create-a-data-source` | No change (uses `parent.page_id`) |
 
 > **Note:** `retrieve-a-database` is still available and returns database metadata including the list of data source IDs. Use `retrieve-a-data-source` to get the schema and properties of a specific data source.
 
@@ -134,6 +134,16 @@ Alternatively, you can grant page access individually. You'll need to visit the 
 ###### Cursor & Claude
 
 Add the following to your `.cursor/mcp.json` or `claude_desktop_config.json` (MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`)
+
+###### Ontheia
+
+Ontheia is a self-hosted, open-source AI agent platform that is compatible with `@notionhq/notion-mcp-server`.
+
+Setup instructions are available in the Ontheia documentation:
+
+https://docs.ontheia.ai/en/getting-started/03_compatible-mcp-servers/
+
+The same `NOTION_TOKEN` and `OPENAPI_MCP_HEADERS` configuration shown below can be used with Ontheia.
 
 ###### Option 1: Using NOTION_TOKEN (recommended)
 
@@ -229,13 +239,7 @@ Using NOTION_TOKEN (recommended):
   "mcpServers": {
     "notionApi": {
       "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-e", "NOTION_TOKEN",
-        "mcp/notion"
-      ],
+      "args": ["run", "--rm", "-i", "-e", "NOTION_TOKEN", "mcp/notion"],
       "env": {
         "NOTION_TOKEN": "ntn_****"
       }
@@ -251,13 +255,7 @@ Using OPENAPI_MCP_HEADERS (for advanced use cases):
   "mcpServers": {
     "notionApi": {
       "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-e", "OPENAPI_MCP_HEADERS",
-        "mcp/notion"
-      ],
+      "args": ["run", "--rm", "-i", "-e", "OPENAPI_MCP_HEADERS", "mcp/notion"],
       "env": {
         "OPENAPI_MCP_HEADERS": "{\"Authorization\":\"Bearer ntn_****\",\"Notion-Version\":\"2025-09-03\"}"
       }
@@ -472,7 +470,7 @@ Notes:
 Comment "Hello MCP" on page "Getting started"
 ```
 
-   AI will correctly plan two API calls, `v1/search` and `v1/comments`, to achieve the task
+AI will correctly plan two API calls, `v1/search` and `v1/comments`, to achieve the task
 
 1. Similarly, the following instruction will result in a new page named "Notion MCP" added to parent page "Development"
 
