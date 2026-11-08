@@ -2736,6 +2736,114 @@
         "deprecated": false,
         "security": []
       }
+    },
+    "/v1/views": {
+      "post": {
+        "summary": "Create a view",
+        "operationId": "create-view",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/notionVersion"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data_source_id",
+                  "name",
+                  "type"
+                ],
+                "properties": {
+                  "data_source_id": {
+                    "type": "string",
+                    "description": "The ID of the data source this view should be scoped to"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The name of the view."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "table",
+                      "board",
+                      "list",
+                      "calendar",
+                      "timeline",
+                      "gallery",
+                      "form",
+                      "chart",
+                      "map",
+                      "dashboard"
+                    ],
+                    "description": "The view type."
+                  },
+                  "database_id": {
+                    "type": "string",
+                    "description": "The ID of the database to create a view in."
+                  },
+                  "filter": {
+                    "type": "object",
+                    "description": "Filter to apply to the view. Uses the same format as the data source query filter. Simple property filters appear in the view's filter bar. For example, a status filter can exclude several values with does_not_equal."
+                  },
+                  "sorts": {
+                    "type": "array",
+                    "description": "Property sorts to save on the view. Timestamp sorts are accepted but are not saved.",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "configuration": {
+                    "type": "object",
+                    "description": "View presentation configuration. The type field must match the view type."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
