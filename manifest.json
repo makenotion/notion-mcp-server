@@ -1,0 +1,70 @@
+{
+  "manifest_version": "0.3",
+  "name": "notion-mcp-server",
+  "display_name": "Notion MCP Server",
+  "version": "2.0.0",
+  "description": "MCP server for the Notion API - search, read, create, and update pages and data sources",
+  "long_description": "Official Notion MCP server that enables AI assistants to interact with your Notion workspace. Search across pages and databases, read and create content, manage data sources (databases), and organize your workspace programmatically.",
+  "author": {
+    "name": "Notion",
+    "url": "https://notion.so"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/makenotion/notion-mcp-server.git"
+  },
+  "homepage": "https://developers.notion.com/docs/mcp",
+  "documentation": "https://github.com/makenotion/notion-mcp-server/blob/main/README.md",
+  "support": "https://github.com/makenotion/notion-mcp-server/issues",
+  "icon": "icon.png",
+  "keywords": ["notion", "api", "productivity", "notes", "database", "workspace"],
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "bin/cli.mjs",
+    "mcp_config": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "${user_config.notion_token}"
+      }
+    }
+  },
+  "tools": [
+    {"name": "post-search", "description": "Search across all pages and data sources in your Notion workspace"},
+    {"name": "retrieve-a-page", "description": "Get the content and properties of a specific page"},
+    {"name": "retrieve-a-page-property", "description": "Get a specific property value from a page"},
+    {"name": "patch-page", "description": "Update the properties of an existing page"},
+    {"name": "post-page", "description": "Create a new page in a parent page or data source"},
+    {"name": "move-page", "description": "Move a page to a different parent location"},
+    {"name": "retrieve-a-block", "description": "Get a specific block by ID"},
+    {"name": "update-a-block", "description": "Update a block's content"},
+    {"name": "delete-a-block", "description": "Delete a block by ID"},
+    {"name": "get-block-children", "description": "Get the child blocks of a block or page"},
+    {"name": "patch-block-children", "description": "Add new blocks as children of a block or page"},
+    {"name": "get-user", "description": "Get information about a specific user"},
+    {"name": "get-users", "description": "List all users in the workspace"},
+    {"name": "get-self", "description": "Get information about the current bot user"},
+    {"name": "retrieve-a-comment", "description": "Get a specific comment by ID"},
+    {"name": "create-a-comment", "description": "Add a comment to a page or block"},
+    {"name": "query-data-source", "description": "Query a data source (database) with filters and sorts"},
+    {"name": "retrieve-a-data-source", "description": "Get metadata and schema for a data source"},
+    {"name": "update-a-data-source", "description": "Update data source properties"},
+    {"name": "create-a-data-source", "description": "Create a new data source"},
+    {"name": "list-data-source-templates", "description": "List available templates in a data source"}
+  ],
+  "user_config": {
+    "notion_token": {
+      "type": "string",
+      "title": "Notion Token",
+      "description": "Your Notion integration token from https://www.notion.so/profile/integrations",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
