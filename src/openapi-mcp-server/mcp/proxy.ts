@@ -234,6 +234,10 @@ export class MCPProxy {
                 }),
               },
             ],
+            // Without this the result defaults to success, so a caller that
+            // branches on `isError` treats a failed API call as a successful
+            // one and parses the error body as data.
+            isError: true,
           }
         }
         throw error
