@@ -1,0 +1,23 @@
+{
+  "name": "notion-mcp-server",
+  "version": "0.1.0",
+  "description": "Control Notion workspaces from Codex via MCP",
+  "author": {
+    "name": "makenotion",
+    "url": "https://github.com/makenotion/notion-mcp-server"
+  },
+  "homepage": "https://github.com/makenotion/notion-mcp-server",
+  "repository": "https://github.com/makenotion/notion-mcp-server",
+  "keywords": [
+    "mcp",
+    "codex"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Notion MCP Server",
+    "shortDescription": "Control Notion workspaces from Codex via MCP",
+    "longDescription": "Official Notion MCP Server. Read and write Notion pages, databases, and content.",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/makenotion/notion-mcp-server"
+  }
+}
