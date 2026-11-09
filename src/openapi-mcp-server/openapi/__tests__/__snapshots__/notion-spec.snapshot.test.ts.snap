@@ -4,6 +4,7 @@ exports[`Notion OpenAPI spec -> MCP tools (snapshot) > generates a stable set of
 [
   "create-a-comment",
   "create-a-data-source",
+  "create-view",
   "delete-a-block",
   "get-block-children",
   "get-self",
@@ -60,6 +61,27 @@ Error Responses:
     "required": [
       "parent",
       "properties",
+    ],
+  },
+  {
+    "description": "Notion | Create a view
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "create-view",
+    "properties": [
+      "configuration",
+      "data_source_id",
+      "database_id",
+      "filter",
+      "name",
+      "sorts",
+      "type",
+    ],
+    "required": [
+      "data_source_id",
+      "name",
+      "type",
     ],
   },
   {
