@@ -4,6 +4,7 @@ exports[`Notion OpenAPI spec -> MCP tools (snapshot) > generates a stable set of
 [
   "create-a-comment",
   "create-a-data-source",
+  "create-database",
   "delete-a-block",
   "get-block-children",
   "get-self",
@@ -60,6 +61,24 @@ Error Responses:
     "required": [
       "parent",
       "properties",
+    ],
+  },
+  {
+    "description": "Notion | Create a database
+Error Responses:
+400: Bad request",
+    "httpMethod": "post",
+    "name": "create-database",
+    "properties": [
+      "description",
+      "icon",
+      "initial_data_source",
+      "is_inline",
+      "parent",
+      "title",
+    ],
+    "required": [
+      "parent",
     ],
   },
   {
