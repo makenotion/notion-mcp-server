@@ -2834,6 +2834,26 @@
                     "maxItems": 100,
                     "description": "The description of the database."
                   },
+                  "icon": {
+                    "type": "object",
+                    "description": "The emoji icon for the database.",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "emoji",
+                        "description": "Always `emoji`"
+                      },
+                      "emoji": {
+                        "type": "string",
+                        "description": "An emoji character.",
+                        "example": "😀"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "emoji"
+                    ]
+                  },
                   "is_inline": {
                     "type": "boolean",
                     "description": "Whether the database should be displayed inline in the parent page. Defaults to false."

@@ -71,6 +71,7 @@ Error Responses:
     "name": "create-database",
     "properties": [
       "description",
+      "icon",
       "initial_data_source",
       "is_inline",
       "parent",
