@@ -5,6 +5,7 @@ import { OpenAPIToMCPConverter } from '../openapi/parser'
 import { HttpClient, HttpClientError } from '../client/http-client'
 import { OpenAPIV3 } from 'openapi-types'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { ToolFilter, isToolAllowed, toolFilterFromEnv, warnUnknownToolNames } from './tool-filter'
 
 type PathItemObject = OpenAPIV3.PathItemObject & {
   get?: OpenAPIV3.OperationObject
@@ -135,8 +136,15 @@ export class MCPProxy {
    *   headers are resolved from the environment (`OPENAPI_MCP_HEADERS` /
    *   `NOTION_TOKEN`). The HTTP transport passes per-connection headers here so a
    *   single deployment can serve multiple Notion integrations.
+   * @param toolFilter Which tools to expose. When omitted, it is read from the
+   *   `ENABLED_TOOLS` / `DISABLED_TOOLS` environment variables.
    */
-  constructor(name: string, openApiSpec: OpenAPIV3.Document, headers?: Record<string, string>) {
+  constructor(
+    name: string,
+    openApiSpec: OpenAPIV3.Document,
+    headers?: Record<string, string>,
+    toolFilter: ToolFilter = toolFilterFromEnv(),
+  ) {
     this.server = new Server({ name, version: '1.0.0' }, { capabilities: { tools: {} } })
     const baseUrl = openApiSpec.servers?.[0].url
     if (!baseUrl) {
@@ -155,6 +163,7 @@ export class MCPProxy {
     const { tools, openApiLookup } = converter.convertToMCPTools()
     this.tools = tools
     this.openApiLookup = openApiLookup
+    this.applyToolFilter(toolFilter)
 
     this.setupHandlers()
   }
@@ -239,6 +248,37 @@ export class MCPProxy {
         throw error
       }
     })
+  }
+
+  /**
+   * Drop tools excluded by `ENABLED_TOOLS` / `DISABLED_TOOLS` from both the tool
+   * list and the operation lookup, so a filtered-out tool can neither be listed
+   * nor called.
+   */
+  private applyToolFilter(filter: ToolFilter) {
+    if (!filter.enabled && !filter.disabled) {
+      return
+    }
+
+    const candidates = Object.entries(this.tools).flatMap(([toolName, def]) =>
+      def.methods.map(method => ({ toolName: `${toolName}-${method.name}`, operationId: method.name })),
+    )
+    warnUnknownToolNames(filter, candidates)
+
+    for (const [toolName, def] of Object.entries(this.tools)) {
+      def.methods = def.methods.filter(method => {
+        const toolNameWithMethod = `${toolName}-${method.name}`
+        if (isToolAllowed(filter, toolNameWithMethod, method.name)) {
+          return true
+        }
+        delete this.openApiLookup[toolNameWithMethod]
+        return false
+      })
+    }
+
+    if (Object.keys(this.openApiLookup).length === 0) {
+      console.warn('ENABLED_TOOLS / DISABLED_TOOLS exclude every tool; the server will expose no tools')
+    }
   }
 
   private findOperation(operationId: string): (OpenAPIV3.OperationObject & { method: string; path: string }) | null {

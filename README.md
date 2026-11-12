@@ -326,6 +326,32 @@ Don't forget to replace `ntn_****` with your integration secret. Find it from yo
 
 ![Copying your Integration token from the Configuration tab in the developer portal](https://github.com/user-attachments/assets/67b44536-5333-49fa-809c-59581bf5370a)
 
+### Limiting the exposed tools
+
+By default every tool is exposed. To reduce the tool definitions sent to the model, or to keep an agent away from write operations, set one of these environment variables to a comma-separated list of tool names:
+
+- `ENABLED_TOOLS`: expose only the listed tools.
+- `DISABLED_TOOLS`: expose every tool except the listed ones.
+
+A tool can be named by its full MCP name (`API-post-search`) or by its operation ID (`post-search`). If both variables are set, `DISABLED_TOOLS` is removed from the `ENABLED_TOOLS` list. Filtered-out tools are not listed and cannot be called. Unknown names are ignored with a warning on stderr, and unset or empty variables leave all tools enabled.
+
+```json
+{
+  "mcpServers": {
+    "notionApi": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_****",
+        "ENABLED_TOOLS": "post-search,retrieve-a-page,retrieve-page-markdown"
+      }
+    }
+  }
+}
+```
+
+With Docker, pass the variable through like `NOTION_TOKEN` (for example `-e DISABLED_TOOLS=delete-a-block,update-a-block`). The filter applies to both the STDIO and Streamable HTTP transports.
+
 ### Transport options
 
 The Notion MCP Server supports two transport modes:

@@ -1,4 +1,5 @@
 import { MCPProxy } from '../proxy'
+import type { ToolFilter } from '../tool-filter'
 import { OpenAPIV3 } from 'openapi-types'
 import { HttpClient } from '../../client/http-client'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
@@ -361,6 +362,121 @@ describe('MCPProxy', () => {
           },
         }),
         expect.anything(),
+      )
+    })
+  })
+
+  describe('tool filtering (ENABLED_TOOLS / DISABLED_TOOLS, issue #111)', () => {
+    const originalEnv = process.env
+    const ok = { '200': { description: 'Success' } }
+    const filterSpec = (): OpenAPIV3.Document => ({
+      openapi: '3.0.0',
+      servers: [{ url: 'http://localhost:3000' }],
+      info: { title: 'Test API', version: '1.0.0' },
+      paths: {
+        '/search': { post: { operationId: 'post-search', responses: ok } },
+        '/pages/{page_id}': { get: { operationId: 'retrieve-a-page', responses: ok } },
+        '/blocks/{block_id}': { delete: { operationId: 'delete-a-block', responses: ok } },
+      },
+    })
+
+    // Build a proxy and return the list/call handlers it registered.
+    const buildProxy = (toolFilter?: ToolFilter) => {
+      vi.clearAllMocks()
+      const filtered = new MCPProxy('test-proxy', filterSpec(), undefined, toolFilter)
+      const server = (filtered as any).server
+      const [listTools, callTool] = server.setRequestHandler.mock.calls
+        .flatMap((x: unknown[]) => x)
+        .filter((x: unknown) => typeof x === 'function')
+      return { listTools, callTool }
+    }
+
+    const listedNames = async (listTools: Function) => (await listTools()).tools.map((t: { name: string }) => t.name)
+
+    beforeEach(() => {
+      process.env = { ...originalEnv }
+      delete process.env.ENABLED_TOOLS
+      delete process.env.DISABLED_TOOLS
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+      vi.restoreAllMocks()
+    })
+
+    it('exposes every tool when neither variable is set', async () => {
+      const { listTools } = buildProxy()
+      expect(await listedNames(listTools)).toEqual(['API-post-search', 'API-retrieve-a-page', 'API-delete-a-block'])
+    })
+
+    it('exposes every tool when the variables are blank', async () => {
+      process.env.ENABLED_TOOLS = ''
+      process.env.DISABLED_TOOLS = ' , '
+      const { listTools } = buildProxy()
+      expect(await listedNames(listTools)).toHaveLength(3)
+    })
+
+    it('exposes only allow-listed tools, by full name or operationId', async () => {
+      process.env.ENABLED_TOOLS = 'API-post-search, retrieve-a-page'
+      const { listTools } = buildProxy()
+      expect(await listedNames(listTools)).toEqual(['API-post-search', 'API-retrieve-a-page'])
+    })
+
+    it('hides deny-listed tools and refuses to call them', async () => {
+      process.env.DISABLED_TOOLS = 'delete-a-block'
+      const { listTools, callTool } = buildProxy()
+
+      expect(await listedNames(listTools)).toEqual(['API-post-search', 'API-retrieve-a-page'])
+      await expect(callTool({ params: { name: 'API-delete-a-block', arguments: {} } })).rejects.toThrow(
+        'Method API-delete-a-block not found',
+      )
+      expect(HttpClient.prototype.executeOperation).not.toHaveBeenCalled()
+    })
+
+    it('refuses to call tools outside the allow-list', async () => {
+      process.env.ENABLED_TOOLS = 'post-search'
+      const { callTool } = buildProxy()
+
+      await expect(callTool({ params: { name: 'API-retrieve-a-page', arguments: {} } })).rejects.toThrow(
+        'Method API-retrieve-a-page not found',
+      )
+    })
+
+    it('still calls allowed tools', async () => {
+      process.env.ENABLED_TOOLS = 'post-search'
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: { results: [] },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      })
+      const { callTool } = buildProxy()
+
+      const result = await callTool({ params: { name: 'API-post-search', arguments: {} } })
+      expect(result.content[0].text).toBe(JSON.stringify({ results: [] }))
+    })
+
+    it('applies DISABLED_TOOLS on top of ENABLED_TOOLS', async () => {
+      process.env.ENABLED_TOOLS = 'post-search,delete-a-block'
+      process.env.DISABLED_TOOLS = 'API-delete-a-block'
+      const { listTools } = buildProxy()
+      expect(await listedNames(listTools)).toEqual(['API-post-search'])
+    })
+
+    it('prefers an explicit filter over the environment', async () => {
+      process.env.ENABLED_TOOLS = 'post-search'
+      const { listTools } = buildProxy({ disabled: new Set(['post-search']) })
+      expect(await listedNames(listTools)).toEqual(['API-retrieve-a-page', 'API-delete-a-block'])
+    })
+
+    it('warns when the filter excludes every tool', async () => {
+      process.env.ENABLED_TOOLS = 'no-such-tool-for-proxy-test'
+      const { listTools } = buildProxy()
+
+      expect(await listedNames(listTools)).toEqual([])
+      expect(console.warn).toHaveBeenCalledWith('ENABLED_TOOLS: ignoring unknown tool name "no-such-tool-for-proxy-test"')
+      expect(console.warn).toHaveBeenCalledWith(
+        'ENABLED_TOOLS / DISABLED_TOOLS exclude every tool; the server will expose no tools',
       )
     })
   })
