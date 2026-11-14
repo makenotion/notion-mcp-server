@@ -1,11 +1,18 @@
 import { MCPProxy } from '../proxy'
 import { OpenAPIV3 } from 'openapi-types'
-import { HttpClient } from '../../client/http-client'
+import { HttpClient, HttpClientError } from '../../client/http-client'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
 // Mock the dependencies
-vi.mock('../../client/http-client')
+// Keep the real HttpClientError class so tests can assert on genuine error
+// instances, while stubbing the network client the way the other tests expect.
+vi.mock('../../client/http-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../client/http-client')>()
+  const HttpClient = vi.fn(function (this: unknown) {})
+  Object.assign(HttpClient, { prototype: { executeOperation: vi.fn() } })
+  return { HttpClient, HttpClientError: actual.HttpClientError }
+})
 vi.mock('@modelcontextprotocol/sdk/server/index.js')
 
 describe('MCPProxy', () => {
@@ -173,6 +180,117 @@ describe('MCPProxy', () => {
             text: JSON.stringify({ message: 'success' })
           }
         ]
+      })
+    })
+  })
+
+  describe('API error results (issue #382)', () => {
+    async function callGetUsers() {
+      ;(proxy as any).openApiLookup = {
+        'API-get-users': {
+          operationId: 'getUsers',
+          responses: { '200': { description: 'Success' } },
+          method: 'get',
+          path: '/users',
+        },
+      }
+
+      const server = (proxy as any).server
+      const handlers = server.setRequestHandler.mock.calls
+        .flatMap((x: unknown[]) => x)
+        .filter((x: unknown) => typeof x === 'function')
+      const callToolHandler = handlers[1]
+
+      return callToolHandler({
+        params: {
+          name: 'API-get-users',
+          arguments: {},
+        },
+      })
+    }
+
+    it('marks a 401 from an invalid token as isError and keeps the text unchanged', async () => {
+      // The Notion API error body for an invalid token.
+      const payload = {
+        object: 'error',
+        status: 401,
+        code: 'unauthorized',
+        message: 'API token is invalid.',
+        request_id: 'req_1',
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new HttpClientError('Unauthorized', 401, payload),
+      )
+
+      const result = await callGetUsers()
+
+      expect(result.isError).toBe(true)
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          // The proxy builds `{ status: 'error', ...data }`, so the API's own
+          // status overwrites the placeholder without changing key order.
+          text: JSON.stringify(Object.assign({ status: 'error' }, payload)),
+        },
+      ])
+      expect(JSON.parse((result.content[0] as { text: string }).text).message).toBe('API token is invalid.')
+    })
+
+    it('marks 4xx validation errors as isError', async () => {
+      const payload = {
+        object: 'error',
+        status: 400,
+        code: 'validation_error',
+        message: 'body failed validation.',
+      }
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new HttpClientError('Bad Request', 400, payload),
+      )
+
+      const result = await callGetUsers()
+
+      expect(result.isError).toBe(true)
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: JSON.stringify(Object.assign({ status: 'error' }, payload)),
+        },
+      ])
+    })
+
+    it('marks 5xx responses with a non-JSON body as isError', async () => {
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new HttpClientError('Internal Server Error', 500, '<html><body>Internal Server Error</body></html>'),
+      )
+
+      const result = await callGetUsers()
+
+      expect(result.isError).toBe(true)
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: JSON.stringify({ status: 'error', data: '<html><body>Internal Server Error</body></html>' }),
+        },
+      ])
+    })
+
+    it('does not set isError on a successful 2xx result', async () => {
+      ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { object: 'list', results: [] },
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      })
+
+      const result = await callGetUsers()
+
+      expect(result.isError).toBeUndefined()
+      expect(result).toEqual({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ object: 'list', results: [] }),
+          },
+        ],
       })
     })
   })
