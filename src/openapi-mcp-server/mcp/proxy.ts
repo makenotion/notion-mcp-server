@@ -234,6 +234,11 @@ export class MCPProxy {
                 }),
               },
             ],
+            // A rejected HTTP response (Notion API 4xx/5xx) is a failed tool
+            // call, not a result: flag it so clients and agents can tell the
+            // difference. The text payload is unchanged for compatibility.
+            // @see https://github.com/makenotion/notion-mcp-server/issues/382
+            isError: true,
           }
         }
         throw error
