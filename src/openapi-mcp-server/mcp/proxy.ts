@@ -66,7 +66,8 @@ function deserializeValue(value: unknown): unknown {
   if (typeof value === 'object' && value !== null) {
     const result: Record<string, unknown> = {}
     for (const [key, nested] of Object.entries(value)) {
-      result[key] = deserializeValue(nested)
+      // Rich-text content is literal text, even when it contains valid JSON.
+      result[key] = key === 'content' && typeof nested === 'string' ? nested : deserializeValue(nested)
     }
     return result
   }
