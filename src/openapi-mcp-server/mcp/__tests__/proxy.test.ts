@@ -529,6 +529,40 @@ describe('MCPProxy', () => {
     })
   })
 
+  describe('JSON rich-text content', () => {
+    it.each(['{"a":1}', '[{"a":1}]', ' {"a":1}', '{"a":1}\n', 'plain text', 'true', '[]', '{}'])(
+      'preserves content %j while decoding structural parameters', async (content) => {
+        ;(HttpClient.prototype.executeOperation as ReturnType<typeof vi.fn>).mockResolvedValue({
+          data: { id: 'comment-id' }, status: 200, headers: new Headers(),
+        })
+        ;(proxy as any).openApiLookup = {
+          'API-create-a-comment': {
+            operationId: 'create-a-comment', method: 'post', path: '/comments',
+            responses: { '200': { description: 'Success' } },
+          },
+        }
+        const server = (proxy as any).server
+        const handlers = server.setRequestHandler.mock.calls.flatMap((x: unknown[]) => x).filter((x: unknown) => typeof x === 'function')
+        const rich_text = [{ type: 'text', text: { content } }]
+        const parent = { page_id: 'page-id' }
+        for (const encoded of [false, true]) {
+          const paragraph = { rich_text }
+          await handlers[1]({ params: {
+            name: 'API-create-a-comment',
+            arguments: {
+              parent: JSON.stringify(JSON.stringify(parent)),
+              rich_text: encoded ? JSON.stringify(rich_text) : rich_text,
+              children: [{ paragraph: encoded ? JSON.stringify(paragraph) : paragraph }],
+            },
+          } })
+          expect(HttpClient.prototype.executeOperation).toHaveBeenLastCalledWith(
+            expect.anything(), { parent, rich_text, children: [{ paragraph }] },
+          )
+        }
+      },
+    )
+  })
+
   describe('double-serialization fix (issue #176)', () => {
     it('should deserialize stringified JSON object parameters', async () => {
       // Mock HttpClient response
