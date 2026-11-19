@@ -184,11 +184,11 @@ export async function startServer(args: string[] = process.argv) {
           await proxy.connect(transport)
         } else {
           // Invalid request
-          res.status(400).json({
+          res.status(sessionId ? 404 : 400).json({
             jsonrpc: '2.0',
             error: {
               code: -32000,
-              message: 'Bad Request: No valid session ID provided',
+              message: sessionId ? 'Session not found' : 'Bad Request: No valid session ID provided',
             },
             id: null,
           })
@@ -216,7 +216,11 @@ export async function startServer(args: string[] = process.argv) {
     app.get('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
       if (!sessionId || !transports[sessionId]) {
-        res.status(400).send('Invalid or missing session ID')
+        if (sessionId) {
+          res.status(404).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Session not found' }, id: null })
+        } else {
+          res.status(400).send('Invalid or missing session ID')
+        }
         return
       }
       
@@ -228,7 +232,11 @@ export async function startServer(args: string[] = process.argv) {
     app.delete('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
       if (!sessionId || !transports[sessionId]) {
-        res.status(400).send('Invalid or missing session ID')
+        if (sessionId) {
+          res.status(404).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Session not found' }, id: null })
+        } else {
+          res.status(400).send('Invalid or missing session ID')
+        }
         return
       }
       
