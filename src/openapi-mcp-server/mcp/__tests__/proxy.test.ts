@@ -72,6 +72,41 @@ describe('MCPProxy', () => {
 
       expect(result.tools[0].name.length).toBeLessThanOrEqual(64)
     })
+
+    it('should annotate tools by what the operation does, not only its HTTP method', async () => {
+      const ok = { responses: { '200': { description: 'Success' } } }
+      mockOpenApiSpec.paths = {
+        '/v1/search': { post: { operationId: 'post-search', ...ok } },
+        '/v1/data_sources/{id}/query': { post: { operationId: 'query-data-source', ...ok } },
+        '/v1/pages': { post: { operationId: 'post-page', ...ok } },
+        '/v1/comments': { post: { operationId: 'create-a-comment', ...ok } },
+        '/v1/blocks/{id}': {
+          get: { operationId: 'retrieve-a-block', ...ok },
+          patch: { operationId: 'update-a-block', ...ok },
+          delete: { operationId: 'delete-a-block', ...ok },
+        },
+      }
+      proxy = new MCPProxy('test-proxy', mockOpenApiSpec)
+      const server = (proxy as any).server
+      const listToolsHandler = server.setRequestHandler.mock.calls[0].filter((x: unknown) => typeof x === 'function')[0]
+      const result = await listToolsHandler()
+      const hints = Object.fromEntries(
+        result.tools.map((tool: any) => {
+          const { title, ...rest } = tool.annotations
+          return [tool.name.replace(/^API-/, ''), rest]
+        }),
+      )
+
+      expect(hints).toEqual({
+        'post-search': { readOnlyHint: true },
+        'query-data-source': { readOnlyHint: true },
+        'post-page': { readOnlyHint: false, destructiveHint: false },
+        'create-a-comment': { readOnlyHint: false, destructiveHint: false },
+        'retrieve-a-block': { readOnlyHint: true },
+        'update-a-block': { destructiveHint: true },
+        'delete-a-block': { destructiveHint: true },
+      })
+    })
   })
 
   describe('callTool handler', () => {
