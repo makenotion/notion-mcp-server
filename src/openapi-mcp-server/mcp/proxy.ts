@@ -123,6 +123,25 @@ function unwrapJsonString(value: string): unknown {
   return value
 }
 
+// The HTTP method alone misreports some Notion operations: search and
+// data source queries are POST requests that only read, and creating a page,
+// comment or data source adds content without overwriting anything.
+const READ_ONLY_OPERATIONS = new Set(['post-search', 'query-data-source'])
+const ADDITIVE_OPERATIONS = new Set(['post-page', 'create-a-comment', 'create-a-data-source'])
+
+export function toolHints(
+  operationId: string,
+  httpMethod: string | undefined,
+): Pick<NonNullable<Tool['annotations']>, 'readOnlyHint' | 'destructiveHint'> {
+  if (httpMethod === 'get' || READ_ONLY_OPERATIONS.has(operationId)) {
+    return { readOnlyHint: true }
+  }
+  if (ADDITIVE_OPERATIONS.has(operationId)) {
+    return { readOnlyHint: false, destructiveHint: false }
+  }
+  return { destructiveHint: true }
+}
+
 // import this class, extend and return server
 export class MCPProxy {
   private server: Server
@@ -173,7 +192,6 @@ export class MCPProxy {
           // Look up the HTTP method to determine annotations
           const operation = this.openApiLookup[toolNameWithMethod];
           const httpMethod = operation?.method?.toLowerCase();
-          const isReadOnly = httpMethod === 'get';
 
           tools.push({
             name: truncatedToolName,
@@ -181,9 +199,7 @@ export class MCPProxy {
             inputSchema: method.inputSchema as Tool['inputSchema'],
             annotations: {
               title: this.operationIdToTitle(method.name),
-              ...(isReadOnly
-                ? { readOnlyHint: true }
-                : { destructiveHint: true }),
+              ...toolHints(method.name, httpMethod),
             },
           })
         })
